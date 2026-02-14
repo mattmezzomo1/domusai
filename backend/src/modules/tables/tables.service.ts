@@ -21,7 +21,7 @@ export class TablesService {
         environment_id: data.environment_id,
         is_active: data.is_active !== undefined ? data.is_active : true,
         // Convert status to UPPERCASE to match enum TableStatus (AVAILABLE, UNAVAILABLE, BLOCKED)
-        status: data.status ? data.status.toUpperCase() : 'AVAILABLE',
+        status: (data.status ? data.status.toUpperCase() : 'AVAILABLE') as any,
         position_x: data.position_x,
         position_y: data.position_y,
         updated_date: new Date(),

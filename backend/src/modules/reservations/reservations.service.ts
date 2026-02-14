@@ -48,9 +48,9 @@ export class ReservationsService {
         linked_tables: data.linked_tables || [],
         environment_id: data.environment_id,
         // Convert status to UPPERCASE to match enum ReservationStatus
-        status: data.status ? data.status.toUpperCase() : 'PENDING',
+        status: (data.status ? data.status.toUpperCase() : 'PENDING') as any,
         // Convert source to UPPERCASE to match enum ReservationSource (PHONE, ONLINE)
-        source: data.source.toUpperCase(),
+        source: data.source.toUpperCase() as any,
         notes: data.notes,
         updated_date: new Date(),
       },
@@ -108,6 +108,66 @@ export class ReservationsService {
     }
 
     return reservation as any;
+  }
+
+  async findByPhone(phone: string, restaurantId: string): Promise<ReservationResponseDTO[]> {
+    // Find customer by phone
+    const customers = await prisma.customer.findMany({
+      where: {
+        phone_whatsapp: phone,
+        restaurant_id: restaurantId,
+      },
+    });
+
+    if (customers.length === 0) {
+      return [];
+    }
+
+    const customerIds = customers.map(c => c.id);
+
+    // Find all future reservations for these customers
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        customer_id: { in: customerIds },
+        restaurant_id: restaurantId,
+        date: { gte: today },
+        status: { in: ['PENDING', 'CONFIRMED'] },
+      },
+      include: {
+        customer: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    return reservations as any[];
+  }
+
+  async updatePublic(id: string, data: UpdateReservationDTO): Promise<ReservationResponseDTO> {
+    // Public update - doesn't require owner_email check
+    const reservation = await prisma.reservation.findUnique({
+      where: { id },
+    });
+
+    if (!reservation) {
+      throw new AppError('Reservation not found', 404);
+    }
+
+    // Convert enum fields to UPPERCASE if provided
+    const updateData: any = { ...data, updated_date: new Date() };
+    if (updateData.status) updateData.status = updateData.status.toUpperCase();
+    if (updateData.source) updateData.source = updateData.source.toUpperCase();
+
+    const updated = await prisma.reservation.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return updated as ReservationResponseDTO;
   }
 
   async update(id: string, ownerEmail: string, data: UpdateReservationDTO): Promise<ReservationResponseDTO> {

@@ -4,8 +4,10 @@ import { authenticate, optionalAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
 
-// Public route for checking reservation by code
+// Public routes
 router.get('/code/:code', optionalAuth, reservationsController.findByCode);
+router.get('/phone/:phone', optionalAuth, reservationsController.findByPhone);
+router.put('/public/:id', optionalAuth, reservationsController.updatePublic);
 
 // Protected routes
 router.use(authenticate);

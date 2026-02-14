@@ -25,6 +25,25 @@ export class ReservationsController {
     res.json(reservation);
   });
 
+  findByPhone = asyncHandler(async (req: Request, res: Response) => {
+    const phone = req.params.phone as string;
+    const restaurantId = req.query.restaurant_id as string;
+
+    if (!restaurantId) {
+      res.status(400).json({ error: 'restaurant_id is required' });
+      return;
+    }
+
+    const reservations = await reservationsService.findByPhone(phone, restaurantId);
+    res.json(reservations);
+  });
+
+  updatePublic = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const reservation = await reservationsService.updatePublic(id, req.body);
+    res.json(reservation);
+  });
+
   update = asyncHandler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const reservation = await reservationsService.update(id, req.user!.email, req.body);
