@@ -35,7 +35,7 @@ export default function Dashboard() {
     }
   }, [restaurants, selectedRestaurant]);
 
-  const { data: reservations, isLoading: loadingReservations } = useQuery({
+  const { data: allReservations, isLoading: loadingReservations } = useQuery({
     queryKey: ['reservations', selectedRestaurant?.id, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       if (!selectedRestaurant) return [];
@@ -48,6 +48,11 @@ export default function Dashboard() {
     enabled: !!selectedRestaurant,
     initialData: [],
   });
+
+  // Filtrar reservas canceladas da visualização principal
+  const reservations = allReservations.filter(r =>
+    r.status !== 'cancelled' && r.status !== 'CANCELLED'
+  );
 
   const { data: tables } = useQuery({
     queryKey: ['tables', selectedRestaurant?.id],
