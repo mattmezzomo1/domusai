@@ -105,6 +105,15 @@ export default function Reservations() {
     },
   });
 
+  const confirmReservationMutation = useMutation({
+    mutationFn: (id) => reservationService.update(id, {
+      status: 'CONFIRMED'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['all-reservations']);
+    },
+  });
+
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids) => {
       await Promise.all(ids.map(id => reservationService.delete(id)));
@@ -135,26 +144,31 @@ export default function Reservations() {
   const getShift = (shiftId) => shifts.find(s => s.id === shiftId);
 
   const filteredReservations = reservations.filter(reservation => {
-    const customer = getCustomer(reservation.customer_id);
+    const customer = reservation.customer || getCustomer(reservation.customer_id);
     const table = getTable(reservation.table_id);
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       reservation.reservation_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer?.phone_whatsapp.includes(searchQuery);
-    
+
+    // Comparar status (já está em UPPERCASE no backend)
     const matchesStatus = statusFilter === "all" || reservation.status === statusFilter;
-    
-    const matchesDateRange = (!startDate || reservation.date >= startDate) && 
-                             (!endDate || reservation.date <= endDate);
-    
-    const matchesCustomer = !customerFilter || 
+
+    // Comparar datas corretamente (formato YYYY-MM-DD)
+    const reservationDate = typeof reservation.date === 'string'
+      ? reservation.date.split('T')[0]
+      : reservation.date;
+    const matchesDateRange = (!startDate || reservationDate >= startDate) &&
+                             (!endDate || reservationDate <= endDate);
+
+    const matchesCustomer = !customerFilter ||
       customer?.full_name.toLowerCase().includes(customerFilter.toLowerCase());
-    
+
     const matchesTable = tableFilter === "all" || reservation.table_id === tableFilter;
-    
+
     const matchesShift = shiftFilter === "all" || reservation.shift_id === shiftFilter;
-    
+
     return matchesSearch && matchesStatus && matchesDateRange && matchesCustomer && matchesTable && matchesShift;
   }).sort((a, b) => {
     const customerA = getCustomer(a.customer_id);
@@ -320,11 +334,11 @@ export default function Reservations() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="pending">Reservadas</SelectItem>
-                      <SelectItem value="confirmed">Confirmadas</SelectItem>
-                      <SelectItem value="completed">Concluídas</SelectItem>
-                      <SelectItem value="cancelled">Canceladas</SelectItem>
-                      <SelectItem value="no_show">No-Show</SelectItem>
+                      <SelectItem value="PENDING">Reservadas</SelectItem>
+                      <SelectItem value="CONFIRMED">Confirmadas</SelectItem>
+                      <SelectItem value="COMPLETED">Concluídas</SelectItem>
+                      <SelectItem value="CANCELLED">Canceladas</SelectItem>
+                      <SelectItem value="NO_SHOW">No-Show</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -515,6 +529,16 @@ export default function Reservations() {
                           )}
                         </div>
                         <div className="flex gap-2">
+                          {reservation.status === 'PENDING' && (
+                            <Button
+                              size="sm"
+                              onClick={() => confirmReservationMutation.mutate(reservation.id)}
+                              disabled={confirmReservationMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
+                            >
+                              Confirmar
+                            </Button>
+                          )}
                           <WhatsAppButton
                             phone={customer?.phone_whatsapp}
                             message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
