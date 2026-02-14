@@ -1,0 +1,17 @@
+{
+  "name": "Domus AI",
+  "short_name": "Domus",
+  "description": "Sistema de Gestão de Reservas para Restaurantes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#C47B3C",
+  "icons": [
+    {
+      "src": "https://base44.com/logo_v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
