@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { restaurantService, reservationService, customerService, shiftService, tableService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Users, Calendar, DollarSign, AlertTriangle, Star } from "lucide-react";
@@ -31,7 +31,7 @@ export default function Insights() {
 
   const { data: restaurants } = useQuery({
     queryKey: ['restaurants'],
-    queryFn: () => base44.entities.Restaurant.list(),
+    queryFn: () => restaurantService.list(),
     initialData: [],
   });
 
@@ -63,7 +63,7 @@ export default function Insights() {
       if (!restaurant) return [];
       // Filter reservations by date range directly in the query to avoid fetching all if possible
       // This part assumes the API can filter by date range, otherwise filtering below is necessary
-      return await base44.entities.Reservation.filter({
+      return await reservationService.filter({
         restaurant_id: restaurant.id,
         // Assuming 'date' field in reservation is comparable
         // 'date__gte': format(start, 'yyyy-MM-dd'),
@@ -77,7 +77,7 @@ export default function Insights() {
     queryKey: ['insights-customers', restaurant?.id],
     queryFn: async () => {
       if (!restaurant) return [];
-      return await base44.entities.Customer.filter({
+      return await customerService.filter({
         restaurant_id: restaurant.id
       });
     },
@@ -88,7 +88,7 @@ export default function Insights() {
     queryKey: ['insights-shifts', restaurant?.id],
     queryFn: async () => {
       if (!restaurant) return [];
-      return await base44.entities.Shift.filter({
+      return await shiftService.filter({
         restaurant_id: restaurant.id
       });
     },
@@ -99,7 +99,7 @@ export default function Insights() {
     queryKey: ['insights-tables', restaurant?.id],
     queryFn: async () => {
       if (!restaurant) return [];
-      return await base44.entities.Table.filter({
+      return await tableService.filter({
         restaurant_id: restaurant.id
       });
     },
@@ -108,14 +108,20 @@ export default function Insights() {
 
   // Filtrar reservas do período
   const periodReservations = reservations.filter(r => {
-    const resDate = new Date(r.date);
-    // Ensure comparison is robust against time components
-    resDate.setHours(0, 0, 0, 0); 
-    const startDate = new Date(start);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(end);
-    endDate.setHours(23, 59, 59, 999);
-    return resDate >= startDate && resDate <= endDate;
+    if (!r.date) return false;
+    try {
+      const resDate = new Date(r.date);
+      if (isNaN(resDate.getTime())) return false;
+      // Ensure comparison is robust against time components
+      resDate.setHours(0, 0, 0, 0);
+      const startDate = new Date(start);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(end);
+      endDate.setHours(23, 59, 59, 999);
+      return resDate >= startDate && resDate <= endDate;
+    } catch (error) {
+      return false;
+    }
   });
 
   // Calcular KPIs principais
@@ -143,12 +149,20 @@ export default function Insights() {
     : 0;
 
   // Lead time médio (tempo entre criação e data da reserva) - calculation kept but not displayed
-  const leadTimes = periodReservations.map(r => {
-    const createdDate = new Date(r.created_date);
-    const reservationDate = new Date(r.date);
-    return differenceInDays(reservationDate, createdDate);
-  });
-  const averageLeadTime = leadTimes.length > 0 
+  const leadTimes = periodReservations
+    .filter(r => r.created_date && r.date)
+    .map(r => {
+      try {
+        const createdDate = new Date(r.created_date);
+        const reservationDate = new Date(r.date);
+        if (isNaN(createdDate.getTime()) || isNaN(reservationDate.getTime())) return null;
+        return differenceInDays(reservationDate, createdDate);
+      } catch (error) {
+        return null;
+      }
+    })
+    .filter(time => time !== null);
+  const averageLeadTime = leadTimes.length > 0
     ? (leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length).toFixed(1)
     : 0;
 
@@ -177,13 +191,22 @@ export default function Insights() {
   uniqueCustomersInPeriod.forEach(customer => {
     // Idade
     if (customer.birth_date) {
-      const age = differenceInYears(new Date(), new Date(customer.birth_date));
-      if (age >= 18 && age <= 25) publicInsights.byAge['18-25']++;
-      else if (age >= 26 && age <= 35) publicInsights.byAge['26-35']++;
-      else if (age >= 36 && age <= 45) publicInsights.byAge['36-45']++;
-      else if (age >= 46 && age <= 55) publicInsights.byAge['46-55']++;
-      else if (age >= 56) publicInsights.byAge['56+']++;
-      else publicInsights.byAge['Não informado']++; // For ages outside these ranges, e.g., <18
+      try {
+        const birthDate = new Date(customer.birth_date + 'T12:00:00');
+        if (isNaN(birthDate.getTime())) {
+          publicInsights.byAge['Não informado']++;
+        } else {
+          const age = differenceInYears(new Date(), birthDate);
+          if (age >= 18 && age <= 25) publicInsights.byAge['18-25']++;
+          else if (age >= 26 && age <= 35) publicInsights.byAge['26-35']++;
+          else if (age >= 36 && age <= 45) publicInsights.byAge['36-45']++;
+          else if (age >= 46 && age <= 55) publicInsights.byAge['46-55']++;
+          else if (age >= 56) publicInsights.byAge['56+']++;
+          else publicInsights.byAge['Não informado']++; // For ages outside these ranges, e.g., <18
+        }
+      } catch (error) {
+        publicInsights.byAge['Não informado']++;
+      }
     } else {
       publicInsights.byAge['Não informado']++;
     }
@@ -248,8 +271,17 @@ export default function Insights() {
   ];
 
   periodReservations.forEach(r => {
-    const day = new Date(r.date).getDay();
-    dayOfWeekData[day].reservas++;
+    if (r.date) {
+      try {
+        const date = new Date(r.date);
+        if (!isNaN(date.getTime())) {
+          const day = date.getDay();
+          dayOfWeekData[day].reservas++;
+        }
+      } catch (error) {
+        // Ignore invalid dates
+      }
+    }
   });
 
   // Status das reservas (para gráfico de pizza)

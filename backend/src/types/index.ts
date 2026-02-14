@@ -152,11 +152,13 @@ export interface CreateEnvironmentDTO {
   restaurant_id: string;
   name: string;
   capacity?: number;
+  is_active?: boolean;
 }
 
 export interface UpdateEnvironmentDTO {
   name?: string;
   capacity?: number;
+  is_active?: boolean;
 }
 
 export interface EnvironmentResponseDTO {
@@ -165,6 +167,7 @@ export interface EnvironmentResponseDTO {
   owner_email: string;
   name: string;
   capacity: number | null;
+  is_active: boolean;
   created_date: Date;
   updated_date: Date;
 }

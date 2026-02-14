@@ -81,9 +81,25 @@ export default function Customers() {
 
   const isBirthdayThisMonth = (birthDate) => {
     if (!birthDate) return false;
-    const birth = new Date(birthDate);
-    const now = new Date();
-    return birth.getMonth() === now.getMonth();
+    try {
+      const birth = new Date(birthDate + 'T12:00:00');
+      if (isNaN(birth.getTime())) return false;
+      const now = new Date();
+      return birth.getMonth() === now.getMonth();
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const formatBirthDate = (birthDate) => {
+    if (!birthDate) return null;
+    try {
+      const date = new Date(birthDate + 'T12:00:00');
+      if (isNaN(date.getTime())) return null;
+      return format(date, "dd/MM/yyyy");
+    } catch (error) {
+      return null;
+    }
   };
 
   const filteredCustomers = customers.filter(customer => {
@@ -319,10 +335,10 @@ export default function Customers() {
                                 <span className="truncate">{customer.email}</span>
                               </div>
                             )}
-                            {customer.birth_date && (
+                            {customer.birth_date && formatBirthDate(customer.birth_date) && (
                               <div className="flex items-center gap-2 min-w-0">
                                 <Calendar className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                                <span className="truncate">{format(new Date(customer.birth_date + 'T12:00:00'), "dd/MM/yyyy")}</span>
+                                <span className="truncate">{formatBirthDate(customer.birth_date)}</span>
                               </div>
                             )}
                           </div>

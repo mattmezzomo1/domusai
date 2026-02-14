@@ -141,6 +141,7 @@ model Environment {
   owner_email   String
   name          String
   capacity      Int?
+  is_active     Boolean  @default(true)
   created_date  DateTime @default(now())
   updated_date  DateTime @updatedAt
 

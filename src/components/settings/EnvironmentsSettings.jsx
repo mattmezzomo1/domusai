@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Layers } from "lucide-react";
+import { Plus, Trash2, Layers, CheckCircle, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,13 @@ export default function EnvironmentsSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => environmentService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['environments'] });
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }) => environmentService.update(id, { is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments'] });
     },
@@ -226,6 +233,24 @@ export default function EnvironmentsSettings() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => toggleActiveMutation.mutate({
+                                id: env.id,
+                                is_active: !env.is_active
+                              })}
+                            >
+                              {env.is_active ? (
+                                <>
+                                  <XCircle className="w-4 h-4 mr-2" />
+                                  Desativar
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Ativar
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => deleteMutation.mutate(env.id)}
                               className="text-red-600"
                             >
@@ -266,6 +291,24 @@ export default function EnvironmentsSettings() {
                           <DropdownMenuItem onClick={() => handleEdit(env)}>
                             <Pencil className="w-4 h-4 mr-2" />
                             Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleActiveMutation.mutate({
+                              id: env.id,
+                              is_active: !env.is_active
+                            })}
+                          >
+                            {env.is_active ? (
+                              <>
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Desativar
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Ativar
+                              </>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => deleteMutation.mutate(env.id)}
