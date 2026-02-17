@@ -36,14 +36,26 @@ export default function SubscriptionGuard({ children }) {
     enabled: !!user?.email,
   });
 
+  // DEBUG: Log user and subscription info
+  console.log('🔍 SubscriptionGuard Debug:', {
+    user,
+    userRole: user?.role,
+    loadingUser,
+    loadingSubscription,
+    subscription,
+    subscriptionStatus: subscription?.status
+  });
+
   // Admin sempre tem acesso - verificar primeiro antes de loading
   // Backend retorna role em UPPERCASE (ADMIN, USER)
   if (user?.role === 'ADMIN' || user?.role === 'admin') {
+    console.log('✅ Admin detected, bypassing subscription check');
     return children;
   }
 
   // Mostrar loading apenas enquanto carrega user ou subscription
   if (loadingUser || (user && loadingSubscription)) {
+    console.log('⏳ Loading user or subscription...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30">
         <div className="text-center">
@@ -60,7 +72,10 @@ export default function SubscriptionGuard({ children }) {
     (subscription.status === 'ACTIVE' || subscription.status === 'active' ||
      subscription.status === 'TRIAL' || subscription.status === 'trial');
 
+  console.log('🔐 Subscription check:', { hasActiveSubscription, subscription });
+
   if (!hasActiveSubscription) {
+    console.log('❌ No active subscription, showing payment page');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-amber-50/30 p-4">
         <Card className="max-w-lg w-full shadow-2xl border-none">
