@@ -32,28 +32,27 @@ export default function BookingPublic() {
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get('slug') || 'demo';
 
-  // Buscar restaurante público sem autenticação
-  const { data: restaurants, isLoading: loadingRestaurant } = useQuery({
+  // Buscar restaurante público sem autenticação - usando getBySlug para ser mais rápido
+  const { data: restaurant, isLoading: loadingRestaurant } = useQuery({
     queryKey: ['booking-public-restaurant', slug],
     queryFn: async () => {
       try {
-        // Buscar restaurante público usando filter direto no slug e public=true
-        const result = await restaurantService.filter({
-          slug: slug,
-          public: true
-        });
+        // Usar getBySlug que é mais rápido que filter
+        const result = await restaurantService.getBySlug(slug);
         console.log('✅ Restaurante encontrado:', result);
+        // Verificar se é público
+        if (!result || !result.public) {
+          return null;
+        }
         return result;
       } catch (error) {
         console.error('❌ Erro ao buscar restaurante:', error);
-        return [];
+        return null;
       }
     },
-    initialData: [],
     retry: false,
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   });
-
-  const restaurant = restaurants[0];
 
   const { data: shifts } = useQuery({
     queryKey: ['booking-public-shifts', restaurant?.id],

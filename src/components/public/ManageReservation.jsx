@@ -114,12 +114,23 @@ export default function ManageReservation({ restaurant, action, onBack }) {
   };
 
   const formatPhone = (value) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-                    .replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    // Remover tudo que não é número
+    const cleaned = value.replace(/\D/g, '');
+
+    // Limitar a 11 dígitos (DDD + 9 dígitos)
+    const limited = cleaned.substring(0, 11);
+
+    // Formatar telefone automaticamente
+    let formatted = limited;
+
+    if (limited.length >= 2) {
+      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2)}`;
     }
-    return numbers;
+    if (limited.length >= 7) {
+      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2, 7)}-${limited.substring(7)}`;
+    }
+
+    return formatted;
   };
 
   // Se está editando uma reserva, mostrar o componente de edição

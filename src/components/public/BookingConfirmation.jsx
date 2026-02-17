@@ -49,16 +49,22 @@ export default function BookingConfirmation({ reservationCode, restaurant, booki
   };
 
   const handlePhoneChange = (value) => {
+    // Remover tudo que não é número
     const cleaned = value.replace(/\D/g, '');
-    let formatted = cleaned;
-    
-    if (cleaned.length >= 2) {
-      formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2)}`;
+
+    // Limitar a 11 dígitos (DDD + 9 dígitos)
+    const limited = cleaned.substring(0, 11);
+
+    // Formatar telefone automaticamente
+    let formatted = limited;
+
+    if (limited.length >= 2) {
+      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2)}`;
     }
-    if (cleaned.length >= 7) {
-      formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7, 11)}`;
+    if (limited.length >= 7) {
+      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2, 7)}-${limited.substring(7)}`;
     }
-    
+
     setConfirmPhone(formatted);
     setPhoneError("");
   };

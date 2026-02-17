@@ -32,29 +32,26 @@ export default function PublicBooking() {
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get('slug') || 'demo';
 
-  const { data: restaurants, isLoading: loadingRestaurant, error: restaurantError } = useQuery({
+  const { data: restaurant, isLoading: loadingRestaurant, error: restaurantError } = useQuery({
     queryKey: ['public-restaurant', slug],
     queryFn: async () => {
       try {
-        // Buscar restaurantes públicos sem necessidade de autenticação
-        const all = await restaurantService.filter({ slug: slug, public: true });
-        return all;
-      } catch (error) {
-        console.error('Erro ao buscar restaurante:', error);
-        // Se falhar, tentar buscar todos e filtrar localmente
-        try {
-          const all = await restaurantService.list();
-          return all.filter(r => r.slug === slug && r.public === true);
-        } catch (e) {
-          console.error('Erro ao buscar todos os restaurantes:', e);
-          return [];
+        // Usar getBySlug que é mais rápido que filter
+        const result = await restaurantService.getBySlug(slug);
+        console.log('✅ Restaurante encontrado:', result);
+        // Verificar se é público
+        if (!result || !result.public) {
+          return null;
         }
+        return result;
+      } catch (error) {
+        console.error('❌ Erro ao buscar restaurante:', error);
+        return null;
       }
     },
-    initialData: [],
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   });
-
-  const restaurant = restaurants[0];
 
   const { data: shifts } = useQuery({
     queryKey: ['public-shifts', restaurant?.id],

@@ -113,8 +113,8 @@ export default function Dashboard() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8 pb-24 md:pb-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 pb-24 md:pb-8 w-full">
+      <div className="w-full max-w-full mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
