@@ -111,15 +111,15 @@ export default function Layout({ children, currentPageName }) {
     try {
       const isAuth = await authService.isAuthenticated();
       if (!isAuth) {
-        // Redirecionar para login nativo, e após login voltar para Plans
-        authService.redirectToLogin(createPageUrl("Plans"));
+        // Redirecionar para login e após login voltar para Dashboard
+        authService.redirectToLogin(createPageUrl("Dashboard"));
         return;
       }
       const currentUser = await authService.me();
       setUser(currentUser);
     } catch (error) {
       console.error("Auth error:", error);
-      authService.redirectToLogin(createPageUrl("Plans"));
+      authService.redirectToLogin(createPageUrl("Dashboard"));
     } finally {
       setIsCheckingAuth(false);
     }

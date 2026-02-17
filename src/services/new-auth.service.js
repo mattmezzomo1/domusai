@@ -31,19 +31,16 @@ export const newAuthService = {
    * Faz logout do usuário
    */
   logout: async (redirectUrl) => {
-    try {
-      // Chama o endpoint de logout
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Remove o token independente do resultado
-      apiClient.clearToken();
-      
-      // Redireciona se necessário
-      if (redirectUrl) {
-        window.location.href = redirectUrl;
-      }
+    // Com JWT, o logout é client-side (apenas remove o token)
+    // Não precisa chamar a API
+    apiClient.clearToken();
+
+    // Redireciona se necessário
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
+    } else {
+      // Se não tem redirectUrl, redireciona para login
+      window.location.href = '/login';
     }
   },
 
