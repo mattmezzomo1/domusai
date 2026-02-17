@@ -13,11 +13,11 @@ import AdvancedSettings from "../components/settings/AdvancedSettings";
 export default function Settings() {
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 pb-24 md:pb-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configurações</h1>
-          <p className="text-gray-500">Gerencie as configurações do seu restaurante</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Configurações</h1>
+          <p className="text-xs md:text-sm text-gray-500">Gerencie as configurações do seu restaurante</p>
         </div>
 
         <Tabs defaultValue="restaurant" className="space-y-6">

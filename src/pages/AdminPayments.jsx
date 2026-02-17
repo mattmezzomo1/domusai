@@ -29,23 +29,23 @@ export default function AdminPayments() {
 
   return (
     <AdminGuard>
-    <div className="p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Pagamentos e Assinaturas</h1>
-          <p className="text-gray-500">Gerencie todas as assinaturas e pagamentos da plataforma</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Pagamentos e Assinaturas</h1>
+          <p className="text-xs md:text-sm text-gray-500">Gerencie todas as assinaturas e pagamentos da plataforma</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 mb-3">
           <Card className="shadow-lg border-none overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-500"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
+            <CardHeader className="pb-1 p-2 md:p-3">
+              <CardTitle className="text-xs md:text-sm font-medium text-gray-600">
                 Receita Ativa
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
+            <CardContent className="p-2 md:p-3 pt-0">
+              <div className="text-xl md:text-2xl font-bold text-gray-900">
                 R$ {totalRevenue.toLocaleString('pt-BR')}
               </div>
               <p className="text-xs text-gray-500 mt-1">Mensal</p>
@@ -53,14 +53,14 @@ export default function AdminPayments() {
           </Card>
 
           <Card className="shadow-lg border-none overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+            <CardHeader className="pb-1 p-2 md:p-3">
+              <CardTitle className="text-xs md:text-sm font-medium text-gray-600">
                 MRR Previsto
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
+            <CardContent className="p-2 md:p-3 pt-0">
+              <div className="text-xl md:text-2xl font-bold text-gray-900">
                 R$ {monthlyRecurring.toLocaleString('pt-BR')}
               </div>
               <p className="text-xs text-gray-500 mt-1">Incluindo trials</p>
@@ -68,14 +68,14 @@ export default function AdminPayments() {
           </Card>
 
           <Card className="shadow-lg border-none overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-500"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+            <CardHeader className="pb-1 p-2 md:p-3">
+              <CardTitle className="text-xs md:text-sm font-medium text-gray-600">
                 Total Assinaturas
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
+            <CardContent className="p-2 md:p-3 pt-0">
+              <div className="text-xl md:text-2xl font-bold text-gray-900">
                 {subscriptions.length}
               </div>
               <p className="text-xs text-gray-500 mt-1">Todas os status</p>
@@ -83,8 +83,8 @@ export default function AdminPayments() {
           </Card>
         </div>
 
-        <Card className="shadow-lg mb-6">
-          <CardContent className="p-6">
+        <Card className="shadow-lg mb-3">
+          <CardContent className="p-3 md:p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input

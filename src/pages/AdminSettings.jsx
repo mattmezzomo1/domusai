@@ -7,14 +7,14 @@ import AdminGuard from "@/components/admin/AdminGuard";
 export default function AdminSettings() {
   return (
     <AdminGuard>
-    <div className="p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configurações da Plataforma</h1>
-          <p className="text-gray-500">Gerencie configurações globais do sistema Domus</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Configurações da Plataforma</h1>
+          <p className="text-xs md:text-sm text-gray-500">Gerencie configurações globais do sistema Domus</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-4">
           <Card className="shadow-lg">
             <CardHeader>
               <div className="flex items-center gap-3">

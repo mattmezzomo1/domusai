@@ -130,13 +130,13 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
 
   return (
     <Card className="shadow-lg border-none">
-      <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-4 md:p-6">
-        <CardTitle className="text-base md:text-lg flex items-center gap-2">
-          <Calendar className="w-4 h-4 md:w-5 md:h-5 text-[#A56A38]" />
+      <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
+        <CardTitle className="text-sm md:text-base flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#A56A38]" />
           Reservas do Dia
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 md:p-6">
+      <CardContent className="p-3 md:p-4">
         {/* Bulk Actions Bar */}
         {selectedReservations.length > 0 && (
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
@@ -170,19 +170,19 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
         )}
 
         {isLoading ? (
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-2 md:space-y-3">
             {Array(5).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-24 md:h-32 w-full" />
+              <Skeleton key={i} className="h-20 md:h-24 w-full" />
             ))}
           </div>
         ) : reservations.length === 0 ? (
-          <div className="text-center py-12 md:py-16">
-            <Calendar className="w-12 h-12 md:w-16 md:h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">Nenhuma reserva para este dia</h3>
-            <p className="text-sm md:text-base text-gray-500">As reservas aparecerão aqui quando forem criadas</p>
+          <div className="text-center py-8 md:py-12">
+            <Calendar className="w-10 h-10 md:w-12 md:h-12 mx-auto text-gray-300 mb-3" />
+            <h3 className="text-base md:text-lg font-semibold text-gray-700 mb-1">Nenhuma reserva para este dia</h3>
+            <p className="text-xs md:text-sm text-gray-500">As reservas aparecerão aqui quando forem criadas</p>
           </div>
         ) : (
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-2 md:space-y-3">
             {[...reservations]
               .sort((a, b) => a.slot_time.localeCompare(b.slot_time))
               .map((reservation) => {
@@ -190,13 +190,13 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
               const customer = reservation.customer || getCustomer(reservation.customer_id);
               const table = getTable(reservation.table_id);
               const shift = getShift(reservation.shift_id);
-              
+
               const hasAlteredTag = reservation.tags && reservation.tags.includes('alterada');
-              
+
               return (
                 <div
                   key={reservation.id}
-                  className="bg-gray-50 rounded-lg p-3 md:p-4 hover:bg-gray-100 transition-colors"
+                  className="bg-gray-50 rounded-lg p-2 md:p-3 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-start gap-3">
                     <input

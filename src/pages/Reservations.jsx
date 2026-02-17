@@ -273,12 +273,12 @@ export default function Reservations() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Reservas</h1>
-          <p className="text-sm md:text-base text-gray-500 mb-4">Gerencie todas as reservas do restaurante</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Reservas</h1>
+          <p className="text-xs md:text-sm text-gray-500 mb-2">Gerencie todas as reservas do restaurante</p>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <AddReservationDialog />
@@ -294,15 +294,15 @@ export default function Reservations() {
         </div>
 
         <Card className="shadow-lg border-none">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-4 md:p-6">
-            <CardTitle className="text-base md:text-lg flex items-center gap-2">
-              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-[#A56A38]" />
+          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#A56A38]" />
               Todas as Reservas
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-3 md:p-4">
             {/* Search and Filters */}
-            <div className="space-y-3 md:space-y-4 mb-6">
+            <div className="space-y-2 md:space-y-3 mb-3">
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
@@ -479,7 +479,7 @@ export default function Reservations() {
               </div>
             ) : (
               <>
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 {paginatedReservations.map((reservation) => {
                   const customer = getCustomer(reservation.customer_id);
                   const table = getTable(reservation.table_id);
@@ -488,9 +488,9 @@ export default function Reservations() {
                   return (
                     <div
                       key={reservation.id}
-                      className="bg-gray-50 rounded-lg p-3 md:p-4 hover:bg-gray-100 transition-colors"
+                      className="bg-gray-50 rounded-lg p-2 md:p-3 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2">
                         <input
                           type="checkbox"
                           checked={selectedReservations.includes(reservation.id)}
@@ -499,7 +499,7 @@ export default function Reservations() {
                         />
                         <div className="flex-1">
                       {/* Header */}
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-mono text-xs md:text-sm font-semibold text-[#A56A38]">
                             {reservation.reservation_code}

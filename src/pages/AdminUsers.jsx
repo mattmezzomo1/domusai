@@ -145,13 +145,13 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-3 md:mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Gerenciar Usuários</h1>
-              <p className="text-gray-500">Visualize e gerencie todos os usuários da plataforma</p>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Gerenciar Usuários</h1>
+              <p className="text-xs md:text-sm text-gray-500">Visualize e gerencie todos os usuários da plataforma</p>
             </div>
             <div className="flex gap-2">
               <Button 
@@ -173,8 +173,8 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <Card className="shadow-lg mb-6">
-          <CardContent className="p-6">
+        <Card className="shadow-lg mb-3">
+          <CardContent className="p-3 md:p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input

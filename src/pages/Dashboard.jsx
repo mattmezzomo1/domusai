@@ -113,14 +113,14 @@ export default function Dashboard() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8 pb-24 md:pb-8 w-full">
+    <div className="p-3 md:p-4 pb-24 md:pb-4 w-full">
       <div className="w-full max-w-full mx-auto">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
             {selectedRestaurant?.name}
           </h1>
-          <p className="text-sm md:text-base text-gray-500 mb-4">Visão geral das reservas</p>
+          <p className="text-xs md:text-sm text-gray-500 mb-2">Visão geral das reservas</p>
           
           {/* Adjusted mobile menu: Removed OptimizeReservationsDialog */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -145,7 +145,7 @@ export default function Dashboard() {
         </div>
 
         {/* Date Selector */}
-        <div className="mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="mb-3 bg-white rounded-xl p-2 md:p-3 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between gap-2 mb-3">
             <Button
               variant="outline"
@@ -199,15 +199,15 @@ export default function Dashboard() {
         <DashboardStats stats={stats} isLoading={loadingReservations} />
 
         {/* Tabs */}
-        <Tabs defaultValue="list" className="space-y-6">
+        <Tabs defaultValue="list" className="space-y-3">
           <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="list" className="text-xs md:text-base py-2 md:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
+            <TabsTrigger value="list" className="text-xs md:text-sm py-1.5 md:py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
               Lista
             </TabsTrigger>
-            <TabsTrigger value="management" className="text-xs md:text-base py-2 md:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
+            <TabsTrigger value="management" className="text-xs md:text-sm py-1.5 md:py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
               Gerenciar
             </TabsTrigger>
-            <TabsTrigger value="map" className="text-xs md:text-base py-2 md:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
+            <TabsTrigger value="map" className="text-xs md:text-sm py-1.5 md:py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white">
               Mapa
             </TabsTrigger>
           </TabsList>
@@ -222,13 +222,13 @@ export default function Dashboard() {
 
           <TabsContent value="management">
             <Card className="shadow-lg border-none">
-              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
-                <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                  <Calendar className="w-4 h-4 md:w-5 md:h-5 text-[#A56A38]" />
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
+                <CardTitle className="text-sm md:text-base flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#A56A38]" />
                   Gerenciamento de Mesas - {format(selectedDate, "dd/MM/yyyy")}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-3 md:p-4">
                 <TableManagementView
                   selectedDate={format(selectedDate, 'yyyy-MM-dd')}
                   restaurant={selectedRestaurant}
@@ -239,14 +239,14 @@ export default function Dashboard() {
 
           <TabsContent value="map">
             <Card className="shadow-lg border-none">
-              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
-                <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                  <Calendar className="w-4 h-4 md:w-5 md:h-5 text-[#A56A38]" />
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
+                <CardTitle className="text-sm md:text-base flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#A56A38]" />
                   Mapa de Mesas - {format(selectedDate, "dd/MM/yyyy")}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 md:p-6">
-                <TableMapView 
+              <CardContent className="p-3 md:p-4">
+                <TableMapView
                   selectedDate={format(selectedDate, 'yyyy-MM-dd')}
                   restaurant={selectedRestaurant}
                 />

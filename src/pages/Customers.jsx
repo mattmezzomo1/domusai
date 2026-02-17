@@ -168,12 +168,12 @@ export default function Customers() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">CRM de Clientes</h1>
-          <p className="text-sm md:text-base text-gray-500 mb-4">Gerencie seus clientes e histórico</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">CRM de Clientes</h1>
+          <p className="text-xs md:text-sm text-gray-500 mb-2">Gerencie seus clientes e histórico</p>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <AddCustomerDialog />

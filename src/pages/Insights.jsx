@@ -344,12 +344,12 @@ export default function Insights() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-4 md:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 pb-24 md:pb-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Insights e Análises</h1>
-          <p className="text-sm md:text-base text-gray-500 mb-4">KPIs e métricas do seu restaurante</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Insights e Análises</h1>
+          <p className="text-xs md:text-sm text-gray-500 mb-2">KPIs e métricas do seu restaurante</p>
           
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex gap-3 flex-wrap">

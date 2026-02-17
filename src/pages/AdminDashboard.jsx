@@ -82,33 +82,33 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-3 md:p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel Administrativo</h1>
-          <p className="text-gray-500">Visão geral da plataforma Domus</p>
+        <div className="mb-3 md:mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Painel Administrativo</h1>
+          <p className="text-xs md:text-sm text-gray-500">Visão geral da plataforma Domus</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
           {stats.map((stat, idx) => (
             <Card key={idx} className="shadow-lg border-none overflow-hidden">
-              <div className={`h-2 bg-gradient-to-r ${stat.color}`}></div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+              <div className={`h-1 bg-gradient-to-r ${stat.color}`}></div>
+              <CardHeader className="flex flex-row items-center justify-between pb-1 p-2 md:p-3">
+                <CardTitle className="text-xs md:text-sm font-medium text-gray-600">
                   {stat.title}
                 </CardTitle>
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} bg-opacity-10`}>
-                  <stat.icon className="w-5 h-5 text-white" />
+                <div className={`p-1.5 rounded-lg bg-gradient-to-r ${stat.color} bg-opacity-10`}>
+                  <stat.icon className="w-4 h-4 text-white" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
+              <CardContent className="p-2 md:p-3 pt-0">
+                <div className="text-xl md:text-2xl font-bold text-gray-900">{stat.value}</div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Últimos Usuários</CardTitle>
