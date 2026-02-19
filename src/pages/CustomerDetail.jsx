@@ -92,10 +92,10 @@ export default function CustomerDetail() {
 
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter(r => r.status === 'confirmed').length,
-    completed: reservations.filter(r => r.status === 'completed').length,
-    cancelled: reservations.filter(r => r.status === 'cancelled').length,
-    noShow: reservations.filter(r => r.status === 'no_show').length,
+    confirmed: reservations.filter(r => r.status?.toUpperCase() === 'CONFIRMED').length,
+    completed: reservations.filter(r => r.status?.toUpperCase() === 'COMPLETED').length,
+    cancelled: reservations.filter(r => r.status?.toUpperCase() === 'CANCELLED').length,
+    noShow: reservations.filter(r => r.status?.toUpperCase() === 'NO_SHOW').length,
     avgPartySize: reservations.length > 0 
       ? Math.round(reservations.reduce((sum, r) => sum + r.party_size, 0) / reservations.length)
       : 0,

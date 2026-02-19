@@ -21,7 +21,7 @@ import SubscriptionGuard from "@/components/subscription/SubscriptionGuard";
 
 const userNavigationItems = [
   {
-    title: "Dashboard",
+    title: "Visão Diária",
     url: createPageUrl("Dashboard"),
     icon: LayoutDashboard,
     order: 1,
@@ -36,7 +36,7 @@ const userNavigationItems = [
     desktopOrder: 2
   },
   {
-    title: "Clientes",
+    title: "CRM",
     url: createPageUrl("Customers"),
     icon: Users,
     order: 3,
@@ -50,11 +50,18 @@ const userNavigationItems = [
     desktopOrder: 4
   },
   {
-    title: "Config",
+    title: "Configurações",
     url: createPageUrl("Settings"),
     icon: Settings,
     order: 5,
     desktopOrder: 5
+  },
+  {
+    title: "Perfil",
+    url: createPageUrl("Profile"),
+    icon: UserCircle,
+    order: 6,
+    desktopOrder: 6
   },
 ];
 
@@ -154,33 +161,25 @@ export default function Layout({ children, currentPageName }) {
           <SidebarHeader className="border-b border-gray-200 p-4">
             <div className="flex items-center justify-between">
               {sidebarOpen ? (
-                <div className="flex items-center gap-3">
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/e8bb9b709_LOGOS16.png" 
-                    alt="Logo" 
-                    className="w-10 h-10 rounded-xl object-cover shadow-lg"
-                  />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#FA7318] to-[#f59e0c] rounded-lg flex items-center justify-center shadow-sm">
+                    <span className="text-white font-bold text-lg">D</span>
+                  </div>
                   <div>
-                    <img 
-                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/df3f23b2d_FULLBLACKSEMREGISTROpdf7.png" 
-                      alt="DOMUS" 
-                      className="h-6 w-auto"
-                    />
+                    <h2 className="text-base font-bold text-gray-900">DOMUS</h2>
                     <p className="text-xs text-gray-500">Sistema de Reservas</p>
                   </div>
                 </div>
               ) : (
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/e8bb9b709_LOGOS16.png" 
-                  alt="Logo" 
-                  className="w-10 h-10 rounded-xl object-cover shadow-lg mx-auto"
-                />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#FA7318] to-[#f59e0c] rounded-lg flex items-center justify-center shadow-sm mx-auto">
+                  <span className="text-white font-bold text-lg">D</span>
+                </div>
               )}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
               >
-                {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                {sidebarOpen ? <ChevronLeft className="w-4 h-4 text-gray-600" /> : <ChevronRight className="w-4 h-4 text-gray-600" />}
               </button>
             </div>
           </SidebarHeader>
@@ -188,23 +187,23 @@ export default function Layout({ children, currentPageName }) {
           <SidebarContent className="p-3">
             <SidebarGroup>
               {sidebarOpen && (
-                <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                  Navegação
+                <SidebarGroupLabel className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-2 mb-1">
+                  NAVEGAÇÃO
                 </SidebarGroupLabel>
               )}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {userNavigationItems.sort((a, b) => a.desktopOrder - b.desktopOrder).map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={`hover:bg-amber-50 hover:text-[#A56A38] transition-all duration-200 rounded-lg mb-1 ${
-                          location.pathname === item.url ? 'bg-gradient-to-r from-[#C47B3C] to-[#A56A38] text-white hover:from-[#D48B4C] hover:to-[#B57A48] shadow-md' : ''
+                      <SidebarMenuButton
+                        asChild
+                        className={`hover:bg-[#FFF5EB] hover:text-[#FA7318] transition-all duration-200 rounded-lg mb-0.5 ${
+                          location.pathname === item.url ? 'bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white hover:from-[#e66610] hover:to-[#dc8c08] shadow-sm' : 'text-gray-700'
                         } ${!sidebarOpen ? 'justify-center' : ''}`}
                       >
                         <Link to={item.url} className={`flex items-center gap-3 px-3 py-2.5 ${!sidebarOpen ? 'justify-center' : ''}`}>
                           <item.icon className="w-5 h-5" />
-                          {sidebarOpen && <span className="font-medium">{item.title}</span>}
+                          {sidebarOpen && <span className="font-medium text-sm">{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

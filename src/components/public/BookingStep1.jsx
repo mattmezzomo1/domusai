@@ -1,16 +1,23 @@
 import React, { useState } from "react";
-import { Calendar, Users, Clock } from "lucide-react";
+import { Calendar, Users, Clock, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function BookingStep1({ onComplete, formData, setFormData, restaurant, shifts }) {
+export default function BookingStep1({ onComplete, formData, setFormData, restaurant, shifts, environments }) {
   const [selectedDate, setSelectedDate] = useState(formData.date || "");
   const [partySize, setPartySize] = useState(formData.party_size || "");
   const [selectedShift, setSelectedShift] = useState(formData.shift_id || "");
+  const [selectedEnvironment, setSelectedEnvironment] = useState(formData.environment_id || "");
 
   const handleContinue = () => {
     if (!selectedDate || !partySize || !selectedShift) {
       alert("Por favor, preencha todos os campos");
+      return;
+    }
+
+    // Se houver múltiplos ambientes, exigir seleção
+    if (environments && environments.length > 1 && !selectedEnvironment) {
+      alert("Por favor, selecione um ambiente");
       return;
     }
 
@@ -28,7 +35,8 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
     onComplete({
       date: selectedDate,
       party_size: partySize,
-      shift_id: selectedShift
+      shift_id: selectedShift,
+      environment_id: selectedEnvironment || null
     });
   };
 
@@ -81,6 +89,41 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
         </p>
       </div>
 
+      {/* Environment Selection - Only show if multiple environments */}
+      {environments && environments.length > 1 && (
+        <div className="space-y-3">
+          <Label className="text-white text-sm font-medium flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[#C47B3C]" />
+            Preferência de Ambiente
+          </Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {environments.map((env) => {
+              const isSelected = selectedEnvironment === env.id;
+              return (
+                <button
+                  key={env.id}
+                  onClick={() => setSelectedEnvironment(env.id)}
+                  className={`p-4 rounded-lg border transition-all text-left ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-[#C47B3C] to-[#A56A38] border-[#C47B3C] shadow-lg'
+                      : 'bg-[rgba(255,255,255,0.05)] border-white/10 hover:border-[#C47B3C]/50'
+                  }`}
+                >
+                  <div className={`font-semibold mb-1 ${isSelected ? 'text-white' : 'text-white'}`}>
+                    {env.name}
+                  </div>
+                  {env.capacity && (
+                    <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-[#AAAAAA]'}`}>
+                      Capacidade: {env.capacity} pessoas
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Shift Selection */}
       {shifts && shifts.length > 0 && (
         <div className="space-y-3">
@@ -116,7 +159,7 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
 
       <button
         onClick={handleContinue}
-        disabled={!selectedDate || !partySize || !selectedShift}
+        disabled={!selectedDate || !partySize || !selectedShift || (environments && environments.length > 1 && !selectedEnvironment)}
         className="premium-button w-full"
       >
         Continuar

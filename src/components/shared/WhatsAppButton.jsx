@@ -13,10 +13,10 @@ export default function WhatsAppButton({ phone, message, size = "default", varia
     <Button
       onClick={handleClick}
       size={size}
-      variant={variant}
-      className={`bg-green-600 hover:bg-green-700 text-white ${className}`}
+      variant="default"
+      className={`bg-[#25D366] hover:bg-[#20BA5A] text-white border-0 h-9 px-3 text-sm ${className}`}
     >
-      <MessageCircle className="w-4 h-4 mr-2" />
+      <MessageCircle className="w-4 h-4 mr-1.5" />
       WhatsApp
     </Button>
   );

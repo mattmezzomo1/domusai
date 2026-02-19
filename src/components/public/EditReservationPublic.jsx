@@ -133,26 +133,39 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
       const mainTable = selectedTables[0];
       const tableIds = selectedTables.map(t => t.id);
 
+      const updatePayload = {
+        date: new Date(formData.date).toISOString(),
+        shift_id: formData.shift_id,
+        slot_time: formData.slot_time,
+        party_size: partySize,
+        table_id: mainTable.id,
+        linked_tables: tableIds,
+        status: "PENDING", // Atualizar status para PENDING quando cliente edita
+      };
+
+      console.log('📝 Atualizando reserva pública:', {
+        reservationId: reservation.id,
+        oldStatus: reservation.status,
+        newStatus: updatePayload.status,
+        payload: updatePayload
+      });
+
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
       const response = await fetch(`${apiUrl}/reservations/public/${reservation.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          date: new Date(formData.date).toISOString(),
-          shift_id: formData.shift_id,
-          slot_time: formData.slot_time,
-          party_size: partySize,
-          table_id: mainTable.id,
-          linked_tables: tableIds,
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Erro ao atualizar reserva');
       }
+
+      const updatedReservation = await response.json();
+      console.log('✅ Reserva atualizada com sucesso:', updatedReservation);
 
       setSuccess("Reserva alterada com sucesso!");
       setTimeout(() => {

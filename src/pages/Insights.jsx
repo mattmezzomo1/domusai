@@ -126,10 +126,13 @@ export default function Insights() {
 
   // Calcular KPIs principais
   const totalReservations = periodReservations.length;
-  const confirmedReservations = periodReservations.filter(r => r.status === 'confirmed' || r.status === 'completed').length;
-  const noShowReservations = periodReservations.filter(r => r.status === 'no_show').length;
-  const cancelledReservations = periodReservations.filter(r => r.status === 'cancelled').length;
-  const completedReservations = periodReservations.filter(r => r.status === 'completed').length;
+  const confirmedReservations = periodReservations.filter(r => {
+    const status = r.status?.toUpperCase();
+    return status === 'CONFIRMED' || status === 'COMPLETED';
+  }).length;
+  const noShowReservations = periodReservations.filter(r => r.status?.toUpperCase() === 'NO_SHOW').length;
+  const cancelledReservations = periodReservations.filter(r => r.status?.toUpperCase() === 'CANCELLED').length;
+  const completedReservations = periodReservations.filter(r => r.status?.toUpperCase() === 'COMPLETED').length;
 
   const noShowRate = totalReservations > 0 ? (noShowReservations / totalReservations * 100).toFixed(1) : 0;
   const cancellationRate = totalReservations > 0 ? (cancelledReservations / totalReservations * 100).toFixed(1) : 0;
@@ -137,7 +140,7 @@ export default function Insights() {
 
   // Calcular receita total
   const totalRevenue = periodReservations
-    .filter(r => r.ticket_amount && r.status === 'completed')
+    .filter(r => r.ticket_amount && r.status?.toUpperCase() === 'COMPLETED')
     .reduce((sum, r) => sum + r.ticket_amount, 0);
 
   // Calcular ticket médio da casa

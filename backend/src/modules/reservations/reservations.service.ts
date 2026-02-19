@@ -162,9 +162,22 @@ export class ReservationsService {
     if (updateData.status) updateData.status = updateData.status.toUpperCase();
     if (updateData.source) updateData.source = updateData.source.toUpperCase();
 
+    console.log('📝 Atualizando reserva pública:', {
+      id,
+      oldStatus: reservation.status,
+      newStatus: updateData.status,
+      updateData
+    });
+
     const updated = await prisma.reservation.update({
       where: { id },
       data: updateData,
+    });
+
+    console.log('✅ Reserva atualizada no banco de dados:', {
+      id: updated.id,
+      status: updated.status,
+      code: updated.reservation_code
     });
 
     return updated as ReservationResponseDTO;

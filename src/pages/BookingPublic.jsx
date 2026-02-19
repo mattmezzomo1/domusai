@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { restaurantService, customerService, tableService, shiftService, reservationService } from "@/services/api.service";
+import { restaurantService, customerService, tableService, shiftService, reservationService, environmentService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle } from "lucide-react";
 
@@ -17,6 +17,7 @@ export default function BookingPublic() {
     party_size: "",
     shift_id: "",
     slot_time: "",
+    environment_id: "",
     full_name: "",
     phone_whatsapp: "",
     email: "",
@@ -37,16 +38,14 @@ export default function BookingPublic() {
     queryKey: ['booking-public-restaurant', slug],
     queryFn: async () => {
       try {
-        // Buscar restaurante pelo slug
-        const restaurants = await restaurantService.filter({ slug: slug });
-        console.log('✅ Restaurantes encontrados:', restaurants);
+        // Buscar restaurante pelo slug usando endpoint público
+        const result = await restaurantService.getBySlug(slug);
+        console.log('✅ Restaurante encontrado:', result);
 
-        if (!restaurants || restaurants.length === 0) {
+        if (!result) {
           console.log('❌ Nenhum restaurante encontrado com slug:', slug);
           return null;
         }
-
-        const result = restaurants[0];
 
         // Verificar se é público
         if (!result.public) {
@@ -86,6 +85,27 @@ export default function BookingPublic() {
     retry: false,
   });
 
+  const { data: environments } = useQuery({
+    queryKey: ['booking-public-environments', restaurant?.id],
+    queryFn: async () => {
+      if (!restaurant) return [];
+      try {
+        const result = await environmentService.filter({
+          restaurant_id: restaurant.id,
+          is_active: true
+        });
+        console.log('✅ Ambientes encontrados:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Erro ao buscar ambientes:', error);
+        return [];
+      }
+    },
+    enabled: !!restaurant,
+    initialData: [],
+    retry: false,
+  });
+
   const handleHomeSelection = (view) => {
     setCurrentView(view);
     setError(null);
@@ -96,6 +116,7 @@ export default function BookingPublic() {
         party_size: "",
         shift_id: "",
         slot_time: "",
+        environment_id: "",
         full_name: "",
         phone_whatsapp: "",
         email: "",
@@ -172,11 +193,19 @@ export default function BookingPublic() {
         throw new Error("Cliente não encontrado ou inválido");
       }
 
-      const tables = await tableService.filter({
+      // Buscar mesas - filtrar por ambiente se selecionado
+      const tableFilters = {
         restaurant_id: restaurant.id,
         is_active: true,
         status: "available"
-      });
+      };
+
+      // Se um ambiente foi selecionado, filtrar apenas mesas desse ambiente
+      if (finalData.environment_id) {
+        tableFilters.environment_id = finalData.environment_id;
+      }
+
+      const tables = await tableService.filter(tableFilters);
 
       const allShifts = await shiftService.filter({
         restaurant_id: restaurant.id
@@ -259,7 +288,7 @@ export default function BookingPublic() {
         party_size: parseInt(finalData.party_size),
         table_id: mainTable.id,
         linked_tables: tableIds,
-        environment_id: mainTable.environment_id || null,
+        environment_id: finalData.environment_id || mainTable.environment_id || null,
         status: "PENDING", // Status em UPPERCASE
         notes: finalData.notes || `Mesas alocadas: ${selectedTables.map(t => t.name).join(', ')}`,
         source: "online"
@@ -461,12 +490,13 @@ export default function BookingPublic() {
 
             <div className="p-6 md:p-10">
               {step === 1 && (
-                <BookingStep1 
+                <BookingStep1
                   onComplete={handleStep1Complete}
                   formData={bookingData}
                   setFormData={setBookingData}
                   restaurant={restaurant}
                   shifts={shifts}
+                  environments={environments}
                 />
               )}
               {step === 2 && (

@@ -5,6 +5,7 @@ import { Clock, Users, User, Calendar, Phone, DollarSign, Trash2 } from "lucide-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { reservationService, customerService, tableService, shiftService } from "@/services/api.service";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -26,24 +27,24 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
 
   const { data: customers } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: () => customerService.list(),
     initialData: [],
   });
 
   const { data: tables } = useQuery({
     queryKey: ['tables'],
-    queryFn: () => base44.entities.Table.list(),
+    queryFn: () => tableService.list(),
     initialData: [],
   });
 
   const { data: shifts } = useQuery({
     queryKey: ['shifts'],
-    queryFn: () => base44.entities.Shift.list(),
+    queryFn: () => shiftService.list(),
     initialData: [],
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Reservation.update(id, { status }),
+    mutationFn: ({ id, status }) => reservationService.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['all-reservations'] });
@@ -51,7 +52,7 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
   });
 
   const updateTicketMutation = useMutation({
-    mutationFn: ({ id, ticket_amount }) => base44.entities.Reservation.update(id, { 
+    mutationFn: ({ id, ticket_amount }) => reservationService.update(id, {
       ticket_amount: parseFloat(ticket_amount),
       status: 'completed'
     }),
@@ -65,7 +66,7 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids) => {
-      await Promise.all(ids.map(id => base44.entities.Reservation.delete(id)));
+      await Promise.all(ids.map(id => reservationService.delete(id)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
@@ -110,33 +111,58 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
   const getTable = (tableId) => tables.find(t => t.id === tableId);
   const getShift = (shiftId) => shifts.find(s => s.id === shiftId);
 
-  const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    confirmed: "bg-green-100 text-green-800 border-green-200",
-    cancelled: "bg-red-100 text-red-800 border-red-200",
-    no_show: "bg-orange-100 text-orange-800 border-orange-200",
-    completed: "bg-blue-100 text-blue-800 border-blue-200",
-    altered: "bg-amber-100 text-amber-800 border-amber-200"
+  const getStatusColor = (status) => {
+    const normalizedStatus = status?.toLowerCase();
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      confirmed: "bg-green-100 text-green-800 border-green-200",
+      cancelled: "bg-red-100 text-red-800 border-red-200",
+      no_show: "bg-orange-100 text-orange-800 border-orange-200",
+      completed: "bg-blue-100 text-blue-800 border-blue-200",
+      altered: "bg-amber-100 text-amber-800 border-amber-200"
+    };
+    return colors[normalizedStatus] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const statusLabels = {
-    pending: "Reservada",
-    confirmed: "Confirmada",
-    cancelled: "Cancelada",
-    no_show: "No-Show",
-    completed: "Concluída",
-    altered: "Alterada"
+  const getStatusLabel = (status) => {
+    const normalizedStatus = status?.toLowerCase();
+    const labels = {
+      pending: "Reservada",
+      confirmed: "Confirmada",
+      cancelled: "Cancelada",
+      no_show: "No-Show",
+      completed: "Concluída",
+      altered: "Alterada"
+    };
+    return labels[normalizedStatus] || status;
   };
 
   return (
-    <Card className="shadow-lg border-none">
-      <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
-        <CardTitle className="text-sm md:text-base flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-[#A56A38]" />
-          Reservas do Dia
-        </CardTitle>
+    <Card className="shadow-sm border border-gray-200">
+      <CardHeader className="bg-white border-b border-gray-200 p-4 md:p-5">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base md:text-lg font-bold text-gray-900">
+            Reservas do Dia
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs bg-amber-500 text-white hover:bg-amber-600 border-none"
+            >
+              Lista
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs text-gray-600 hover:bg-gray-100"
+            >
+              Mapa
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="p-3 md:p-4">
+      <CardContent className="p-4 md:p-5">
         {/* Bulk Actions Bar */}
         {selectedReservations.length > 0 && (
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
@@ -182,7 +208,7 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
             <p className="text-xs md:text-sm text-gray-500">As reservas aparecerão aqui quando forem criadas</p>
           </div>
         ) : (
-          <div className="space-y-2 md:space-y-3">
+          <div className="space-y-3">
             {[...reservations]
               .sort((a, b) => a.slot_time.localeCompare(b.slot_time))
               .map((reservation) => {
@@ -196,160 +222,109 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
               return (
                 <div
                   key={reservation.id}
-                  className="bg-gray-50 rounded-lg p-2 md:p-3 hover:bg-gray-100 transition-colors"
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedReservations.includes(reservation.id)}
-                      onChange={() => toggleSelectReservation(reservation.id)}
-                      className="w-4 h-4 mt-1 cursor-pointer shrink-0"
-                    />
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-mono text-xs md:text-sm font-semibold text-[#A56A38]">
-                            {reservation.reservation_code}
-                          </p>
-                          
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className={`${statusColors[reservation.status]} border text-[10px] md:text-xs px-2 py-1 rounded-md font-semibold cursor-pointer hover:opacity-80 transition-opacity`}>
-                                {statusLabels[reservation.status]}
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'pending' })}>
-                                Reservada
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'confirmed' })}>
-                                Confirmada
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'no_show' })}>
-                                No-Show
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'cancelled' })}>
-                                Cancelada
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'completed' })}>
-                                Concluída
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  <div className="flex items-center gap-4">
+                    {/* Código da Reserva */}
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <p className="font-mono text-sm font-semibold text-gray-700">
+                        {reservation.reservation_code}
+                      </p>
+                    </div>
 
-                          {shift && (
-                            <Badge variant="outline" className="bg-amber-50 text-[#A56A38] border-amber-200 text-[10px] md:text-xs">
-                              {shift.name}
-                            </Badge>
-                          )}
+                    {/* Status Badge */}
+                    <div className="min-w-[100px]">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className={`${getStatusColor(reservation.status)} border text-xs px-3 py-1 rounded-md font-medium cursor-pointer hover:opacity-80 transition-opacity`}>
+                            {getStatusLabel(reservation.status)}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'PENDING' })}>
+                            Reservada
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'CONFIRMED' })}>
+                            Confirmada
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'NO_SHOW' })}>
+                            No-Show
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'CANCELLED' })}>
+                            Cancelada
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: reservation.id, status: 'COMPLETED' })}>
+                            Concluída
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {shift && (
+                        <Badge variant="outline" className="bg-amber-50 text-[#A56A38] border-amber-200 text-xs mt-1">
+                          {shift.name}
+                        </Badge>
+                      )}
+                    </div>
 
-                          {hasAlteredTag && (
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] md:text-xs">
-                              Alterada
-                            </Badge>
-                          )}
+                    {/* Horário */}
+                    <div className="flex items-center gap-2 min-w-[80px]">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium">{reservation.slot_time}</span>
+                    </div>
 
-                          {reservation.ticket_amount && reservation.ticket_amount > 0 && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] md:text-xs">
-                              <DollarSign className="w-3 h-3 mr-1" />
-                              R$ {reservation.ticket_amount.toFixed(2)}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <WhatsAppButton
-                            phone={customer?.phone_whatsapp}
-                            message={`Olá ${customer?.full_name}! Confirmando sua reserva para ${format(new Date(reservation.date), "dd/MM")} às ${reservation.slot_time}.`}
-                            size="sm"
-                            className="text-xs"
-                          />
-                          <EditReservationDialog reservation={reservation} />
-                        </div>
-                      </div>
+                    {/* Pessoas */}
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <Users className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">{reservation.party_size} pessoas</span>
+                    </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 text-xs md:text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="font-semibold truncate">{reservation.slot_time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Users className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{reservation.party_size} pessoas</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <User className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{customer?.full_name || '-'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Phone className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{customer?.phone_whatsapp || '-'}</span>
-                        </div>
-                      </div>
+                    {/* Valor */}
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">
+                        {reservation.ticket_amount && reservation.ticket_amount > 0
+                          ? `R$ ${reservation.ticket_amount.toFixed(2)}`
+                          : 'R$ 0,00'}
+                      </span>
+                    </div>
 
-                      <div className="mt-2 pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm md:text-base text-gray-900 truncate">
-                              {customer?.full_name}
-                            </p>
-                            {reservation.notes && (
-                              <p className="text-xs md:text-sm text-gray-600 mt-1 italic line-clamp-2">"{reservation.notes}"</p>
-                            )}
-                          </div>
+                    {/* Mesa */}
+                    <div className="flex items-center gap-2 min-w-[80px]">
+                      <span className="text-sm text-gray-600">
+                        {table ? table.name : '-'}
+                      </span>
+                    </div>
 
-                          {(reservation.status === 'confirmed' || reservation.status === 'completed' || reservation.status === 'pending') && (
-                            <div className="flex items-center gap-2 ml-4">
-                              {editingTicket === reservation.id ? (
-                                <>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="R$"
-                                    value={ticketValue}
-                                    onChange={(e) => setTicketValue(e.target.value)}
-                                    className="w-24 h-8 text-sm"
-                                    autoFocus
-                                  />
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleTicketSave(reservation.id)}
-                                    disabled={updateTicketMutation.isPending}
-                                    className="h-8 bg-green-600 hover:bg-green-700"
-                                  >
-                                    ✓
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingTicket(null);
-                                      setTicketValue('');
-                                    }}
-                                    className="h-8 px-2"
-                                  >
-                                    ✕
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingTicket(reservation.id);
-                                    setTicketValue(reservation.ticket_amount?.toString() || '');
-                                  }}
-                                  className="h-8 text-xs"
-                                >
-                                  <DollarSign className="w-3 h-3 mr-1" />
-                                  {reservation.ticket_amount && reservation.ticket_amount > 0 ? 'Editar' : 'Valor'}
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    {/* Telefone */}
+                    <div className="flex items-center gap-2 min-w-[120px]">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">{customer?.phone_whatsapp || '-'}</span>
+                    </div>
+
+                    {/* Nome do Cliente */}
+                    <div className="flex-1 min-w-[150px]">
+                      <p className="font-semibold text-sm text-gray-900 truncate">
+                        {customer?.full_name}
+                      </p>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <WhatsAppButton
+                        phone={customer?.phone_whatsapp}
+                        message={`Olá ${customer?.full_name}! Confirmando sua reserva para ${format(new Date(reservation.date), "dd/MM")} às ${reservation.slot_time}.`}
+                        size="sm"
+                        className="text-xs"
+                      />
+                      <EditReservationDialog reservation={reservation} />
                     </div>
                   </div>
+
+                  {/* Notas (se houver) */}
+                  {reservation.notes && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-600 italic">"{reservation.notes}"</p>
+                    </div>
+                  )}
                 </div>
               );
             })}

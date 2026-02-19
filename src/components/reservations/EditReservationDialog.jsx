@@ -259,11 +259,12 @@ export default function EditReservationDialog({ reservation, trigger }) {
         <div onClick={() => setIsOpen(true)}>{trigger}</div>
       ) : (
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setIsOpen(true)}
+          className="h-9 w-9 border-gray-300 hover:bg-gray-50"
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className="w-4 h-4 text-gray-600" />
         </Button>
       )}
 

@@ -67,9 +67,9 @@ export default function AddCustomerDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-[#C47B3C] to-[#A56A38] hover:from-[#D48B4C] hover:to-[#B57A48] text-white" disabled={!restaurant}>
+        <Button className="bg-gradient-to-r from-[#FA7318] to-[#f59e0c] hover:from-[#e66610] hover:to-[#dc8c08] text-white h-10 shadow-sm" disabled={!restaurant}>
           <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
+          Adicionar Cliente
         </Button>
       </DialogTrigger>
       <DialogContent>

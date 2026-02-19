@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User, Phone, Mail, Cake, FileText } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { customerService } from "@/services/api.service";
 
 export default function BookingStep3({ bookingData, restaurant, onComplete, onBack }) {
   const [formData, setFormData] = useState({
@@ -12,7 +12,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
     birthday_year: "",
     notes: bookingData.notes || ""
   });
-  
+
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
   const [existingCustomer, setExistingCustomer] = useState(null);
 
@@ -20,11 +20,11 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
   useEffect(() => {
     const searchCustomer = async () => {
       const cleanPhone = formData.phone_whatsapp.replace(/\D/g, '');
-      
+
       if (cleanPhone.length >= 10) {
         setIsLoadingCustomer(true);
         try {
-          const customers = await base44.entities.Customer.filter({
+          const customers = await customerService.filter({
             restaurant_id: restaurant.id,
             phone_whatsapp: cleanPhone
           });
@@ -32,7 +32,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
           if (customers.length > 0) {
             const customer = customers[0];
             setExistingCustomer(customer);
-            
+
             // Preencher automaticamente os dados do cliente
             setFormData(prev => ({
               ...prev,
@@ -42,7 +42,11 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
 
             // Se tem birth_date, extrair dia, mês e ano
             if (customer.birth_date) {
-              const [year, month, day] = customer.birth_date.split('-');
+              const birthDate = new Date(customer.birth_date);
+              const day = String(birthDate.getDate()).padStart(2, '0');
+              const month = String(birthDate.getMonth() + 1).padStart(2, '0');
+              const year = String(birthDate.getFullYear());
+
               setFormData(prev => ({
                 ...prev,
                 birthday_day: day,
@@ -94,7 +98,8 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
       phone_whatsapp: cleanPhone,
       email: formData.email,
       birth_date: birthday,
-      notes: formData.notes
+      notes: formData.notes,
+      customer_id: existingCustomer?.id || null // Passar customer_id se cliente existente
     });
   };
 

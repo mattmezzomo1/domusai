@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { Search, AlertCircle, Calendar, Clock, Users, Phone } from "lucide-react";
 import EditReservationPublic from "./EditReservationPublic";
 
@@ -71,6 +70,13 @@ export default function ManageReservation({ restaurant, action, onBack }) {
     setSuccess(null);
 
     try {
+      console.log('🚫 Cancelando reserva pública:', {
+        reservationId: reservation.id,
+        code: reservation.reservation_code,
+        oldStatus: reservation.status,
+        newStatus: 'CANCELLED'
+      });
+
       // Usar endpoint público para cancelar
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
       const response = await fetch(`${apiUrl}/reservations/public/${reservation.id}`, {
@@ -87,6 +93,9 @@ export default function ManageReservation({ restaurant, action, onBack }) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Erro ao cancelar reserva');
       }
+
+      const cancelledReservation = await response.json();
+      console.log('✅ Reserva cancelada com sucesso:', cancelledReservation);
 
       setSuccess(`Reserva ${reservation.reservation_code} cancelada com sucesso!`);
 

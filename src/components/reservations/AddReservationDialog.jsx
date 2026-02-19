@@ -21,16 +21,24 @@ export default function AddReservationDialog({ trigger }) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({
+
+  // Estado inicial do formulário com todos os campos definidos
+  const initialFormData = {
     customer_id: '',
     date: '',
     shift_id: '',
     slot_time: '',
-    party_size: '',
-    notes: ''
-  });
+    party_size: '2',
+    notes: '',
+    cpf: '',
+    whatsapp: '',
+    customer_name: ''
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [customerFound, setCustomerFound] = useState(null);
 
   const { data: restaurants } = useQuery({
     queryKey: ['restaurants'],
@@ -110,22 +118,33 @@ export default function AddReservationDialog({ trigger }) {
     setFormData({ ...formData, shift_id: shiftId, slot_time: '' });
     setError(null);
     setAvailableSlots([]);
-    
-    if (!formData.date || !formData.party_size || !shiftId) return;
-    
+
+    console.log('🔍 handleShiftChange - Dados:', {
+      date: formData.date,
+      party_size: formData.party_size,
+      shiftId,
+      totalTables: tables.length,
+      totalShifts: shifts.length
+    });
+
+    if (!formData.date || !formData.party_size || !shiftId) {
+      console.log('⚠️ Faltam dados obrigatórios');
+      return;
+    }
+
     setIsLoadingSlots(true);
-    
+
     try {
       // Buscar TODAS as reservas do dia e filtrar apenas ativas
       const allReservations = await reservationService.filter({
         restaurant_id: restaurant.id,
         date: formData.date
       });
-      
-      const existingReservations = allReservations.filter(r => 
-        r.status === 'pending' || r.status === 'confirmed'
+
+      const existingReservations = allReservations.filter(r =>
+        r.status === 'pending' || r.status === 'confirmed' || r.status === 'PENDING' || r.status === 'CONFIRMED'
       );
-      
+
       console.log('📊 Admin - Reservas no dia:', allReservations.length, '| Ativas:', existingReservations.length);
       
       const shift = shifts.find(s => s.id === shiftId);
@@ -136,7 +155,19 @@ export default function AddReservationDialog({ trigger }) {
       
       // Filtrar apenas mesas ativas e disponíveis
       // Backend retorna: is_active (boolean) e status (UPPERCASE)
-      const activeTables = tables.filter(t => t.is_active && t.status?.toUpperCase() === 'AVAILABLE');
+      console.log('🔍 DEBUG - Todas as mesas:', tables.map(t => ({
+        name: t.name,
+        is_active: t.is_active,
+        status: t.status,
+        seats: t.seats
+      })));
+
+      const activeTables = tables.filter(t => {
+        const isActive = t.is_active === true || t.is_active === 1;
+        const isAvailable = t.status?.toUpperCase() === 'AVAILABLE';
+        console.log(`Mesa ${t.name}: is_active=${t.is_active} (${isActive}), status=${t.status} (${isAvailable})`);
+        return isActive && isAvailable;
+      });
 
       console.log('📊 Admin - Mesas ativas:', activeTables.length, 'de', tables.length);
       
@@ -146,6 +177,17 @@ export default function AddReservationDialog({ trigger }) {
       }
       
       // Gerar slots disponíveis
+      console.log('🔍 Gerando slots com:', {
+        shift: shift.name,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        date: formData.date,
+        party_size: parseInt(formData.party_size),
+        activeTables: activeTables.length,
+        existingReservations: existingReservations.length,
+        booking_cutoff_hours: restaurant.booking_cutoff_hours || 2
+      });
+
       const slots = generateAvailableSlots(
         shift,
         formData.date,
@@ -154,14 +196,14 @@ export default function AddReservationDialog({ trigger }) {
         existingReservations,
         restaurant.booking_cutoff_hours || 2
       );
-      
-      console.log('📊 Admin - Slots gerados:', slots.length);
-      
+
+      console.log('📊 Admin - Slots gerados:', slots.length, slots);
+
       if (slots.length === 0) {
         const totalCapacity = activeTables.reduce((sum, t) => sum + t.seats, 0);
         setError(`Nenhum horário disponível para ${formData.party_size} pessoa(s). Capacidade total: ${totalCapacity} lugares. ${existingReservations.length > 0 ? 'Todas as mesas estão ocupadas.' : 'Verifique se há mesas suficientes cadastradas.'}`);
       }
-      
+
       setAvailableSlots(slots);
     } catch (err) {
       console.error("Erro ao carregar slots:", err);
@@ -197,21 +239,36 @@ export default function AddReservationDialog({ trigger }) {
         tables,
         existingReservations
       );
-      
+
+      console.log('🔍 Validação retornou:', validation);
+
       if (!validation.valid) {
         throw new Error(validation.error);
       }
-      
+
+      console.log('✅ Mesas alocadas pela validação:', validation.data.tables.map(t => ({
+        id: t.id,
+        name: t.name,
+        seats: t.seats
+      })));
+
       // Gerar código único
       const code = `${restaurant.slug.toUpperCase()}-${data.date.replace(/-/g, '')}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
+
       const mainTable = validation.data.tables[0];
-      
+      const linkedTableIds = validation.data.tables.map(t => t.id);
+
+      console.log('📝 Criando reserva com:', {
+        table_id: mainTable.id,
+        linked_tables: linkedTableIds,
+        party_size: parseInt(data.party_size)
+      });
+
       // Buscar o usuário autenticado para pegar o owner_email
       const user = await authService.me();
 
       // Criar a reserva com data em formato ISO-8601
-      const reservation = await reservationService.create({
+      const reservationData = {
         restaurant_id: restaurant.id,
         owner_email: user.email,
         customer_id: data.customer_id,
@@ -221,13 +278,19 @@ export default function AddReservationDialog({ trigger }) {
         slot_time: data.slot_time,
         party_size: parseInt(data.party_size),
         table_id: mainTable.id,
-        linked_tables: validation.data.tables.map(t => t.id),
+        linked_tables: linkedTableIds,
         environment_id: mainTable.environment_id || null,
         status: 'PENDING', // Status em UPPERCASE
         source: 'phone',
         notes: data.notes || `Reserva para ${data.party_size} pessoa(s). Mesas: ${validation.data.tables.map(t => t.name).join(', ')}`
-      });
-      
+      };
+
+      console.log('📤 Enviando para o backend:', reservationData);
+
+      const reservation = await reservationService.create(reservationData);
+
+      console.log('✅ Reserva criada:', reservation);
+
       return reservation;
     },
     onSuccess: () => {
@@ -235,16 +298,10 @@ export default function AddReservationDialog({ trigger }) {
       queryClient.invalidateQueries({ queryKey: ['all-reservations'] });
       queryClient.invalidateQueries({ queryKey: ['map-reservations'] });
       setIsOpen(false);
-      setFormData({
-        customer_id: '',
-        date: '',
-        shift_id: '',
-        slot_time: '',
-        party_size: '',
-        notes: ''
-      });
+      setFormData(initialFormData);
       setAvailableSlots([]);
       setError(null);
+      setCustomerFound(null);
     },
     onError: (err) => {
       setError(err.message || "Erro ao criar reserva");
@@ -253,11 +310,71 @@ export default function AddReservationDialog({ trigger }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Se não encontrou cliente no CRM, criar um novo
+    if (!formData.customer_id && formData.customer_name && formData.whatsapp) {
+      console.log('⚠️ Cliente não encontrado no CRM, será necessário criar um novo');
+      setError('Por favor, cadastre o cliente no CRM antes de criar a reserva.');
+      return;
+    }
+
+    if (!formData.customer_id) {
+      setError('Por favor, preencha o CPF ou WhatsApp para buscar o cliente.');
+      return;
+    }
+
+    console.log('✅ Criando reserva com dados:', formData);
     createMutation.mutate(formData);
   };
 
   const getTodayDate = () => {
     return new Date().toISOString().split('T')[0];
+  };
+
+  // Buscar cliente por CPF
+  const handleCpfChange = (value) => {
+    setFormData({ ...formData, cpf: value });
+
+    if (value.length >= 11) { // CPF tem 11 dígitos
+      const cleanCpf = value.replace(/\D/g, '');
+      const customer = customers.find(c => c.cpf && c.cpf.replace(/\D/g, '') === cleanCpf);
+
+      if (customer) {
+        setCustomerFound(customer);
+        setFormData({
+          ...formData,
+          cpf: value,
+          customer_id: customer.id,
+          customer_name: customer.full_name,
+          whatsapp: customer.phone_whatsapp
+        });
+      } else {
+        setCustomerFound(null);
+      }
+    }
+  };
+
+  // Buscar cliente por WhatsApp
+  const handleWhatsAppChange = (value) => {
+    setFormData({ ...formData, whatsapp: value });
+
+    if (value.length >= 10) { // Telefone tem pelo menos 10 dígitos
+      const cleanPhone = value.replace(/\D/g, '');
+      const customer = customers.find(c => c.phone_whatsapp && c.phone_whatsapp.replace(/\D/g, '') === cleanPhone);
+
+      if (customer) {
+        setCustomerFound(customer);
+        setFormData({
+          ...formData,
+          whatsapp: value,
+          customer_id: customer.id,
+          customer_name: customer.full_name,
+          cpf: customer.cpf || ''
+        });
+      } else {
+        setCustomerFound(null);
+      }
+    }
   };
 
   return (
@@ -272,7 +389,7 @@ export default function AddReservationDialog({ trigger }) {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Criar Reserva Manualmente</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Nova Reserva</DialogTitle>
         </DialogHeader>
 
         {error && (
@@ -283,29 +400,23 @@ export default function AddReservationDialog({ trigger }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Linha 1: Data e Pessoas */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="customer">Cliente *</Label>
-              <Select
-                value={formData.customer_id}
-                onValueChange={(value) => setFormData({...formData, customer_id: value})}
+              <Label htmlFor="date">Data</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={getTodayDate()}
+                className="h-11"
                 required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.full_name} - {customer.phone_whatsapp}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="party_size">Número de Pessoas *</Label>
+              <Label htmlFor="party_size">Pessoas</Label>
               <Input
                 id="party_size"
                 type="number"
@@ -313,33 +424,24 @@ export default function AddReservationDialog({ trigger }) {
                 max={restaurant?.max_party_size || 12}
                 value={formData.party_size}
                 onChange={(e) => setFormData({...formData, party_size: e.target.value, shift_id: '', slot_time: ''})}
-                placeholder="Quantidade"
+                className="h-11"
                 required
               />
             </div>
+          </div>
 
+          {/* Linha 2: Turno e Horário */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Data *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleDateChange(e.target.value)}
-                min={getTodayDate()}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="shift">Turno *</Label>
+              <Label htmlFor="shift">Turno</Label>
               <Select
                 value={formData.shift_id}
                 onValueChange={handleShiftChange}
                 required
                 disabled={!formData.date || !formData.party_size}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o turno" />
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecionar turno" />
                 </SelectTrigger>
                 <SelectContent>
                   {shifts
@@ -362,12 +464,11 @@ export default function AddReservationDialog({ trigger }) {
               </Select>
             </div>
 
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="slot_time">Horário *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="slot_time">Horário</Label>
               {isLoadingSlots ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#A56A38]" />
-                  <span className="ml-2 text-sm text-gray-500">Verificando disponibilidade...</span>
+                <div className="flex items-center justify-center h-11 border rounded-md">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                 </div>
               ) : (
                 <Select
@@ -376,47 +477,105 @@ export default function AddReservationDialog({ trigger }) {
                   required
                   disabled={!formData.shift_id || availableSlots.length === 0}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      !formData.shift_id 
-                        ? "Selecione turno e pessoas primeiro"
-                        : availableSlots.length === 0
-                        ? "Nenhum horário disponível"
-                        : "Selecione o horário"
-                    } />
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione um turno primeiro" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableSlots.map((slot) => (
                       <SelectItem key={slot.time} value={slot.time}>
-                        {slot.time} ({slot.tablesCount} mesa{slot.tablesCount > 1 ? 's' : ''})
+                        {slot.time}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
-              <p className="text-xs text-gray-500">
-                💡 Apenas horários com mesas disponíveis são exibidos
-              </p>
             </div>
           </div>
 
+          {/* Linha 3: CPF e WhatsApp */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                type="text"
+                value={formData.cpf}
+                onChange={(e) => handleCpfChange(e.target.value)}
+                placeholder="000.000.000-00"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp</Label>
+              <Input
+                id="whatsapp"
+                type="text"
+                value={formData.whatsapp}
+                onChange={(e) => handleWhatsAppChange(e.target.value)}
+                placeholder="(00) 00000-0000"
+                className="h-11"
+              />
+            </div>
+          </div>
+
+          {/* Linha 4: Nome do Cliente */}
+          <div className="space-y-2">
+            <Label htmlFor="customer_name">Nome do Cliente</Label>
+            <Input
+              id="customer_name"
+              type="text"
+              value={formData.customer_name}
+              onChange={(e) => setFormData({...formData, customer_name: e.target.value})}
+              placeholder={customerFound ? "Cliente encontrado no CRM" : "Digite o nome do cliente"}
+              className="h-11"
+              disabled={!!customerFound}
+              required
+            />
+            {customerFound && (
+              <p className="text-xs text-green-600">✓ Cliente encontrado: {customerFound.full_name}</p>
+            )}
+          </div>
+
+          {/* Linha 5: Mesa */}
+          <div className="space-y-2">
+            <Label htmlFor="table">Mesa (disponíveis para 2+ lugares)</Label>
+            <Select disabled>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Sem mesa" />
+              </SelectTrigger>
+            </Select>
+            <p className="text-xs text-gray-500">
+              💡 A mesa será atribuída automaticamente baseado na disponibilidade
+            </p>
+          </div>
+
+          {/* Linha 6: Observações */}
           <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="Observações sobre a reserva"
+              placeholder="Adicione observações sobre a reserva"
+              className="min-h-[80px] resize-none"
             />
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+          {/* Botões */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              className="h-11 px-6"
+            >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={createMutation.isPending || isLoadingSlots}
+              className="bg-gradient-to-r from-[#FA7318] to-[#f59e0c] hover:from-[#e66610] hover:to-[#dc8c08] text-white h-11 px-6"
             >
               {createMutation.isPending ? (
                 <>

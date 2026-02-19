@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Clock, Users, MapPin, Phone, Download, Filter, DollarSign, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { Search, Calendar, Clock, Users, MapPin, Phone, Download, Filter, DollarSign, Trash2, Plus } from "lucide-react";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SubscriptionGuard from "../components/subscription/SubscriptionGuard";
@@ -26,13 +27,17 @@ export default function Reservations() {
   const [editingTicket, setEditingTicket] = useState(null);
   const [ticketValue, setTicketValue] = useState('');
   const [selectedReservations, setSelectedReservations] = useState([]);
-  
+
   // Novos filtros
   const [customerFilter, setCustomerFilter] = useState("");
   const [tableFilter, setTableFilter] = useState("all");
   const [shiftFilter, setShiftFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date_desc"); // date_desc, date_asc, code, customer_name
-  
+
+  // Visualização (dia/semana/mês)
+  const [viewMode, setViewMode] = useState("week"); // day, week, month
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -93,6 +98,58 @@ export default function Reservations() {
   });
 
   const queryClient = useQueryClient();
+
+  // Atualizar datas baseado no modo de visualização
+  useEffect(() => {
+    updateDateRange();
+  }, [viewMode, currentDate]);
+
+  const updateDateRange = () => {
+    let start, end;
+
+    if (viewMode === "day") {
+      start = startOfDay(currentDate);
+      end = endOfDay(currentDate);
+    } else if (viewMode === "week") {
+      start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Domingo
+      end = endOfWeek(currentDate, { weekStartsOn: 0 });
+    } else if (viewMode === "month") {
+      start = startOfMonth(currentDate);
+      end = endOfMonth(currentDate);
+    }
+
+    setStartDate(format(start, "yyyy-MM-dd"));
+    setEndDate(format(end, "yyyy-MM-dd"));
+  };
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    setCurrentDate(new Date()); // Reset para hoje
+  };
+
+  const navigatePrevious = () => {
+    if (viewMode === "day") {
+      setCurrentDate(addDays(currentDate, -1));
+    } else if (viewMode === "week") {
+      setCurrentDate(addWeeks(currentDate, -1));
+    } else if (viewMode === "month") {
+      setCurrentDate(addMonths(currentDate, -1));
+    }
+  };
+
+  const navigateNext = () => {
+    if (viewMode === "day") {
+      setCurrentDate(addDays(currentDate, 1));
+    } else if (viewMode === "week") {
+      setCurrentDate(addWeeks(currentDate, 1));
+    } else if (viewMode === "month") {
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
+
+  const navigateToday = () => {
+    setCurrentDate(new Date());
+  };
 
   const updateTicketMutation = useMutation({
     mutationFn: ({ id, ticket_amount }) => reservationService.update(id, {
@@ -203,19 +260,19 @@ export default function Reservations() {
   }, [searchQuery, statusFilter, startDate, endDate, customerFilter, tableFilter, shiftFilter, sortBy]);
 
   const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200", // New status
-    confirmed: "bg-green-100 text-green-800 border-green-200",
-    cancelled: "bg-red-100 text-red-800 border-red-200",
-    no_show: "bg-orange-100 text-orange-800 border-orange-200",
-    completed: "bg-blue-100 text-blue-800 border-blue-200" // Changed from yellow-toned to blue-toned
+    PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    CONFIRMED: "bg-green-50 text-green-700 border-green-200",
+    CANCELLED: "bg-red-50 text-red-700 border-red-200",
+    NO_SHOW: "bg-orange-50 text-orange-700 border-orange-200",
+    COMPLETED: "bg-blue-50 text-blue-700 border-blue-200"
   };
 
   const statusLabels = {
-    pending: "Reservada", // New status label
-    confirmed: "Confirmada",
-    cancelled: "Cancelada",
-    no_show: "Não Compareceu",
-    completed: "Concluída"
+    PENDING: "Pendente",
+    CONFIRMED: "Confirmada",
+    CANCELLED: "Cancelada",
+    NO_SHOW: "Não Compareceu",
+    COMPLETED: "Concluída"
   };
 
   const toggleSelectReservation = (reservationId) => {
@@ -273,378 +330,542 @@ export default function Reservations() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-3 md:p-4">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-3 md:mb-4">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Reservas</h1>
-          <p className="text-xs md:text-sm text-gray-500 mb-2">Gerencie todas as reservas do restaurante</p>
-          
-          <div className="flex flex-col sm:flex-row gap-3">
-            <AddReservationDialog />
-            <Button
-              variant="outline"
-              onClick={exportToCSV}
-              className="w-full sm:w-auto hover:bg-amber-50 hover:text-[#A56A38] hover:border-[#A56A38]"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
-            </Button>
-          </div>
-        </div>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">Reservas</h1>
+              <p className="text-sm text-gray-500">Gerencie todas as reservas do restaurante</p>
+            </div>
 
-        <Card className="shadow-lg border-none">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-2 md:p-3">
-            <CardTitle className="text-sm md:text-base flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#A56A38]" />
-              Todas as Reservas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 md:p-4">
-            {/* Search and Filters */}
-            <div className="space-y-2 md:space-y-3 mb-3">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
+            <div className="flex gap-2.5">
+              <Button
+                variant="outline"
+                onClick={exportToCSV}
+                className="hover:bg-gray-50 border-gray-300 h-10 px-4 text-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+              <AddReservationDialog
+                trigger={
+                  <Button className="bg-gradient-to-r from-[#FA7318] to-[#f59e0c] hover:from-[#e66610] hover:to-[#dc8c08] text-white shadow-sm h-10 px-4 text-sm font-medium">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Reserva
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+
+          {/* Toolbar - Desktop */}
+          <div className="bg-white rounded-lg border border-gray-200 mb-4 hidden md:block">
+            {/* Linha única: Checkbox, Busca, Filtros e Data */}
+            <div className="flex items-center gap-3 p-3">
+              {/* Checkbox Selecionar tudo */}
+              <div className="flex items-center gap-2 shrink-0">
+                <input
+                  type="checkbox"
+                  checked={selectedReservations.length === paginatedReservations.length && paginatedReservations.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 cursor-pointer rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-600 whitespace-nowrap">Selecionar tudo</span>
+              </div>
+
+              {/* Campo de Busca */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Buscar por código, cliente ou telefone..."
+                  placeholder="Buscar por nome, código ou CPF..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base"
+                  className="pl-9 h-9 text-sm border-gray-300"
                 />
               </div>
 
-              {/* Filter Toggle Button (Mobile) */}
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="w-full md:hidden"
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-              </Button>
+              {/* Filtro Status */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-9 w-40 text-sm border-gray-300">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="PENDING">Pendente</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmada</SelectItem>
+                  <SelectItem value="COMPLETED">Concluída</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelada</SelectItem>
+                  <SelectItem value="NO_SHOW">No-Show</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {/* Filters */}
-              <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Status</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="PENDING">Reservadas</SelectItem>
-                      <SelectItem value="CONFIRMED">Confirmadas</SelectItem>
-                      <SelectItem value="COMPLETED">Concluídas</SelectItem>
-                      <SelectItem value="CANCELLED">Canceladas</SelectItem>
-                      <SelectItem value="NO_SHOW">No-Show</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Filtro Turno */}
+              <Select value={shiftFilter} onValueChange={setShiftFilter}>
+                <SelectTrigger className="h-9 w-40 text-sm border-gray-300">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {shifts.map(shift => (
+                    <SelectItem key={shift.id} value={shift.id}>{shift.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Turno</Label>
-                  <Select value={shiftFilter} onValueChange={setShiftFilter}>
-                    <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os Turnos</SelectItem>
-                      {shifts.map(shift => (
-                        <SelectItem key={shift.id} value={shift.id}>{shift.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Mesa</Label>
-                  <Select value={tableFilter} onValueChange={setTableFilter}>
-                    <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as Mesas</SelectItem>
-                      {tables.sort((a, b) => a.name.localeCompare(b.name)).map(table => (
-                        <SelectItem key={table.id} value={table.id}>{table.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Ordenar por</Label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date_desc">Data (Mais Recente)</SelectItem>
-                      <SelectItem value="date_asc">Data (Mais Antiga)</SelectItem>
-                      <SelectItem value="code">Código da Reserva</SelectItem>
-                      <SelectItem value="customer_name">Nome do Cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Segunda linha de filtros */}
-              <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Data Início</Label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-10 md:h-12 text-sm md:text-base"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-10 md:h-12 text-sm md:text-base"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs md:text-sm">Filtrar por Cliente</Label>
-                  <Input
-                    type="text"
-                    placeholder="Nome do cliente..."
-                    value={customerFilter}
-                    onChange={(e) => setCustomerFilter(e.target.value)}
-                    className="h-10 md:h-12 text-sm md:text-base"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bulk Actions Bar */}
-            {selectedReservations.length > 0 && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                <p className="text-sm font-medium text-blue-900">
-                  {selectedReservations.length} reserva(s) selecionada(s)
-                </p>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={bulkDeleteMutation.isPending}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {bulkDeleteMutation.isPending ? 'Excluindo...' : 'Excluir Selecionadas'}
-                </Button>
-              </div>
-            )}
-
-            {/* Results Count and Select All */}
-            <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="text-xs md:text-sm text-gray-600">
-                {filteredReservations.length} {filteredReservations.length === 1 ? 'reserva encontrada' : 'reservas encontradas'}
-                {totalPages > 1 && (
-                  <span className="ml-2 text-gray-500">
-                    (Página {currentPage} de {totalPages})
-                  </span>
-                )}
-              </div>
-              {paginatedReservations.length > 0 && (
+              {/* Navegação de Data */}
+              <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={toggleSelectAll}
-                  className="text-xs"
+                  onClick={navigatePrevious}
+                  className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-50"
                 >
-                  {selectedReservations.length === paginatedReservations.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToday}
+                  className="h-9 px-3 text-sm border-gray-300 hover:bg-gray-50"
+                >
+                  Hoje
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateNext}
+                  className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-50"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Button>
+              </div>
+
+              {/* Seletor de Data */}
+              <Input
+                type="date"
+                value={format(currentDate, "yyyy-MM-dd")}
+                onChange={(e) => setCurrentDate(new Date(e.target.value))}
+                className="h-9 w-44 text-sm border-gray-300"
+              />
+
+              {/* Botões de Visualização */}
+              <div className="flex items-center gap-1 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewModeChange("day")}
+                  className={`h-9 px-4 text-sm border-gray-300 ${
+                    viewMode === "day"
+                      ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0 hover:from-[#e66610] hover:to-[#dc8c08]"
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  Dia
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewModeChange("week")}
+                  className={`h-9 px-4 text-sm border-gray-300 ${
+                    viewMode === "week"
+                      ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0 hover:from-[#e66610] hover:to-[#dc8c08]"
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  Semana
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewModeChange("month")}
+                  className={`h-9 px-4 text-sm border-gray-300 ${
+                    viewMode === "month"
+                      ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0 hover:from-[#e66610] hover:to-[#dc8c08]"
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  Mês
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Toolbar - Mobile */}
+          <div className="bg-white rounded-lg border border-gray-200 mb-4 md:hidden">
+            <div className="p-3 space-y-3">
+              {/* Busca */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-10 text-sm border-gray-300"
+                />
+              </div>
+
+              {/* Filtros em linha */}
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-10 flex-1 text-sm border-gray-300">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="PENDING">Pendente</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmada</SelectItem>
+                    <SelectItem value="COMPLETED">Concluída</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelada</SelectItem>
+                    <SelectItem value="NO_SHOW">No-Show</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={shiftFilter} onValueChange={setShiftFilter}>
+                  <SelectTrigger className="h-10 flex-1 text-sm border-gray-300">
+                    <SelectValue placeholder="Turno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {shifts.map(shift => (
+                      <SelectItem key={shift.id} value={shift.id}>{shift.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Navegação de Data e Botões de Visualização */}
+              <div className="flex items-center justify-between gap-2">
+                {/* Navegação */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={navigatePrevious}
+                    className="h-10 w-10 p-0 border-gray-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={navigateToday}
+                    className="h-10 px-3 text-sm border-gray-300"
+                  >
+                    Hoje
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={navigateNext}
+                    className="h-10 w-10 p-0 border-gray-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Button>
+                </div>
+
+                {/* Botões de Visualização */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewModeChange("day")}
+                    className={`h-10 px-3 text-xs border-gray-300 ${
+                      viewMode === "day"
+                        ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0"
+                        : "bg-white"
+                    }`}
+                  >
+                    Dia
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewModeChange("week")}
+                    className={`h-10 px-3 text-xs border-gray-300 ${
+                      viewMode === "week"
+                        ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0"
+                        : "bg-white"
+                    }`}
+                  >
+                    Semana
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewModeChange("month")}
+                    className={`h-10 px-3 text-xs border-gray-300 ${
+                      viewMode === "month"
+                        ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] text-white border-0"
+                        : "bg-white"
+                    }`}
+                  >
+                    Mês
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Period Indicator */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {viewMode === "day" && (
+                <span>Mostrando reservas de <strong>{format(currentDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</strong></span>
+              )}
+              {viewMode === "week" && (
+                <span>Mostrando reservas de <strong>{format(startOfWeek(currentDate, { weekStartsOn: 0 }), "dd/MM", { locale: ptBR })} a {format(endOfWeek(currentDate, { weekStartsOn: 0 }), "dd/MM/yyyy", { locale: ptBR })}</strong></span>
+              )}
+              {viewMode === "month" && (
+                <span>Mostrando reservas de <strong>{format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}</strong></span>
               )}
             </div>
+            <div className="text-sm font-medium text-gray-900">
+              {filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'}
+            </div>
+          </div>
 
-            {/* Reservations List */}
-            {isLoading ? (
-              <div className="space-y-3">
-                {Array(5).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-24 md:h-32 w-full" />
-                ))}
-              </div>
-            ) : paginatedReservations.length === 0 ? (
-              <div className="text-center py-12 md:py-16">
-                <Calendar className="w-12 h-12 md:w-16 md:h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">Nenhuma reserva encontrada</h3>
-                <p className="text-sm md:text-base text-gray-500">Tente ajustar os filtros de busca</p>
-              </div>
-            ) : (
-              <>
-              <div className="space-y-2 md:space-y-3">
-                {paginatedReservations.map((reservation) => {
-                  const customer = getCustomer(reservation.customer_id);
-                  const table = getTable(reservation.table_id);
-                  const shift = getShift(reservation.shift_id);
-                  
-                  return (
-                    <div
-                      key={reservation.id}
-                      className="bg-gray-50 rounded-lg p-2 md:p-3 hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-start gap-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedReservations.includes(reservation.id)}
-                          onChange={() => toggleSelectReservation(reservation.id)}
-                          className="w-4 h-4 mt-1 cursor-pointer shrink-0"
-                        />
-                        <div className="flex-1">
-                      {/* Header */}
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-mono text-xs md:text-sm font-semibold text-[#A56A38]">
-                            {reservation.reservation_code}
-                          </p>
-                          <Badge variant="outline" className={`${statusColors[reservation.status]} border text-[10px] md:text-xs`}>
-                            {statusLabels[reservation.status]}
-                          </Badge>
-                          {shift && (
-                            <Badge variant="outline" className="bg-amber-50 text-[#A56A38] border-amber-200 text-[10px] md:text-xs">
-                              {shift.name}
-                            </Badge>
-                          )}
-                          
-                          {/* Tag Alterada */}
-                          {reservation.tags && reservation.tags.includes('alterada') && (
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] md:text-xs">
-                              Alterada
-                            </Badge>
-                          )}
+          {/* Reservations List */}
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array(5).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+          ) : paginatedReservations.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+              <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhuma reserva encontrada</h3>
+              <p className="text-base text-gray-500">Tente ajustar os filtros de busca</p>
+            </div>
+          ) : (
+            <>
+              {/* Group reservations by date */}
+              {Object.entries(
+                paginatedReservations.reduce((groups, reservation) => {
+                  const date = reservation.date.split('T')[0];
+                  if (!groups[date]) groups[date] = [];
+                  groups[date].push(reservation);
+                  return groups;
+                }, {})
+              ).map(([date, dateReservations]) => {
+                const reservationDate = new Date(date + 'T00:00:00');
+                const dayOfWeek = format(reservationDate, 'EEEE', { locale: ptBR });
+                const dayNumber = format(reservationDate, 'd');
+                const monthName = format(reservationDate, 'MMMM', { locale: ptBR });
+                const totalPeople = dateReservations.reduce((sum, r) => sum + r.party_size, 0);
+                const occupancyRate = Math.round((dateReservations.length / 10) * 100); // Simplified calculation
 
-                          {/* Ticket Amount */}
-                          {reservation.ticket_amount !== undefined && reservation.ticket_amount > 0 && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] md:text-xs">
-                              <DollarSign className="w-3 h-3 mr-1" />
-                              R$ {reservation.ticket_amount.toFixed(2)}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          {reservation.status === 'PENDING' && (
-                            <Button
-                              size="sm"
-                              onClick={() => confirmReservationMutation.mutate(reservation.id)}
-                              disabled={confirmReservationMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
-                            >
-                              Confirmar
-                            </Button>
-                          )}
-                          <WhatsAppButton
-                            phone={customer?.phone_whatsapp}
-                            message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
-                            size="sm"
-                            className="text-xs"
-                          />
-                          <EditReservationDialog reservation={reservation} />
+                return (
+                  <div key={date} className="mb-5">
+                    {/* Date Header - Desktop */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2.5 hidden md:block">
+                      <div className="flex items-center gap-6">
+                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                          {dayOfWeek.toUpperCase()}, {dayNumber} DE {monthName.toUpperCase()}
+                        </h3>
+                        <div className="flex items-center gap-5 text-xs text-gray-600">
+                          <span className="font-medium">{dateReservations.length} reservas</span>
+                          <span className="font-medium">{dateReservations.filter(r => r.status !== 'CANCELLED').length} lugares</span>
+                          <span className="text-[#FA7318] font-semibold">{occupancyRate}% ocupação</span>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Info Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 text-xs md:text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Calendar className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{format(new Date(reservation.date), "dd/MM/yyyy")}</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="font-semibold truncate">{reservation.slot_time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Users className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{reservation.party_size} pessoas</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <MapPin className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{table?.name || '-'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Phone className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                          <span className="truncate">{customer?.phone_whatsapp}</span>
+                    {/* Date Header - Mobile */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2.5 md:hidden">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
+                          {dayOfWeek.toUpperCase()}, {dayNumber} DE {monthName.toUpperCase()}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="font-medium text-gray-600">{dateReservations.length} reservas</span>
+                          <span className="text-[#FA7318] font-semibold">{occupancyRate}%</span>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Customer Name and Ticket Input */}
-                      <div className="mt-2 pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm md:text-base text-gray-900 truncate">
-                              {customer?.full_name}
-                            </p>
-                            {reservation.notes && (
-                              <p className="text-xs md:text-sm text-gray-600 mt-1 italic line-clamp-2">"{reservation.notes}"</p>
-                            )}
-                          </div>
+                    {/* Reservations for this date */}
+                    <div className="space-y-2">
+                      {dateReservations.map((reservation) => {
+                        const customer = getCustomer(reservation.customer_id);
+                        const table = getTable(reservation.table_id);
+                        const shift = getShift(reservation.shift_id);
 
-                          {/* Quick Ticket Input */}
-                          <div className="flex items-center gap-2 ml-4">
-                            {editingTicket === reservation.id ? (
-                              <>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="R$"
-                                  value={ticketValue}
-                                  onChange={(e) => setTicketValue(e.target.value)}
-                                  className="w-24 h-8 text-sm"
-                                  autoFocus
+                        return (
+                          <div
+                            key={reservation.id}
+                            className="bg-white border border-gray-200 rounded-lg p-3.5 hover:shadow-sm transition-shadow"
+                          >
+                            {/* Desktop Layout */}
+                            <div className="hidden md:flex items-center gap-3">
+                              {/* Checkbox */}
+                              <input
+                                type="checkbox"
+                                checked={selectedReservations.includes(reservation.id)}
+                                onChange={() => toggleSelectReservation(reservation.id)}
+                                className="w-4 h-4 cursor-pointer shrink-0 rounded border-gray-300"
+                              />
+
+                              {/* Código da Reserva */}
+                              <div className="w-28 shrink-0">
+                                <p className="font-mono text-xs font-medium text-gray-700">
+                                  {reservation.reservation_code}
+                                </p>
+                              </div>
+
+                              {/* Badges (Status, Turno, etc) */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge
+                                  variant="outline"
+                                  className={`${statusColors[reservation.status]} border-0 text-xs px-2.5 py-0.5 font-medium rounded-md`}
+                                >
+                                  {statusLabels[reservation.status]}
+                                </Badge>
+                                {shift && (
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-0 text-xs px-2.5 py-0.5 font-medium rounded-md">
+                                    {shift.name}
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Informações em linha */}
+                              <div className="flex items-center gap-5 flex-1 text-sm text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="font-medium text-gray-700">{reservation.slot_time}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="text-gray-600">{reservation.party_size} pessoas</span>
+                                </div>
+                                {reservation.ticket_amount > 0 && (
+                                  <div className="flex items-center gap-1.5">
+                                    <DollarSign className="w-3.5 h-3.5 text-gray-400" />
+                                    <span className="text-gray-600">R$ {reservation.ticket_amount.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1.5">
+                                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="text-gray-600">Mesa {table?.name || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Phone className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="text-gray-600">{customer?.phone_whatsapp}</span>
+                                </div>
+                              </div>
+
+                              {/* Ações */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <WhatsAppButton
+                                  phone={customer?.phone_whatsapp}
+                                  message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
                                 />
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleTicketSave(reservation.id)}
-                                  disabled={updateTicketMutation.isPending}
-                                  className="h-8 bg-green-600 hover:bg-green-700"
+                                <EditReservationDialog reservation={reservation} />
+                              </div>
+                            </div>
+
+                            {/* Nome do Cliente - Desktop */}
+                            <div className="mt-2.5 pl-7 hidden md:block">
+                              <p className="font-medium text-sm text-gray-900">
+                                {customer?.full_name}
+                              </p>
+                              {reservation.notes && (
+                                <p className="text-xs text-gray-500 mt-0.5 italic">"{reservation.notes}"</p>
+                              )}
+                            </div>
+
+                            {/* Mobile Layout */}
+                            <div className="md:hidden">
+                              {/* Header com Código e Status */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedReservations.includes(reservation.id)}
+                                    onChange={() => toggleSelectReservation(reservation.id)}
+                                    className="w-4 h-4 cursor-pointer shrink-0 rounded border-gray-300 mt-0.5"
+                                  />
+                                  <div>
+                                    <p className="font-mono text-xs font-medium text-gray-700">
+                                      {reservation.reservation_code}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={`${statusColors[reservation.status]} border-0 text-xs px-2.5 py-0.5 font-medium rounded-md`}
                                 >
-                                  ✓
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setEditingTicket(null);
-                                    setTicketValue('');
-                                  }}
-                                  className="h-8 px-2"
-                                >
-                                  ✕
-                                </Button>
-                              </>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingTicket(reservation.id);
-                                  setTicketValue(reservation.ticket_amount?.toString() || '');
-                                }}
-                                className="h-8 text-xs"
-                              >
-                                <DollarSign className="w-3 h-3 mr-1" />
-                                {reservation.ticket_amount !== undefined && reservation.ticket_amount > 0 ? 'Editar' : 'Valor'}
-                              </Button>
-                            )}
+                                  {statusLabels[reservation.status]}
+                                </Badge>
+                              </div>
+
+                              {/* Nome do Cliente */}
+                              <p className="font-semibold text-base text-gray-900 mb-2">
+                                {customer?.full_name}
+                              </p>
+
+                              {/* Informações Principais */}
+                              <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-[#FA7318]" />
+                                  <span className="text-sm font-medium text-gray-900">{reservation.slot_time}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm text-gray-600">{reservation.party_size} pessoas</span>
+                                </div>
+                                {shift && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-0 text-xs px-2 py-0.5 font-medium rounded-md">
+                                      {shift.name}
+                                    </Badge>
+                                  </div>
+                                )}
+                                {table && (
+                                  <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-600">Mesa {table.name}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Notas */}
+                              {reservation.notes && (
+                                <p className="text-xs text-gray-500 mb-3 italic bg-gray-50 p-2 rounded">
+                                  "{reservation.notes}"
+                                </p>
+                              )}
+
+                              {/* Ações */}
+                              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                                <WhatsAppButton
+                                  phone={customer?.phone_whatsapp}
+                                  message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
+                                />
+                                <EditReservationDialog reservation={reservation} />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      </div>
-                      </div>
-                      </div>
-                      );
+                        );
                       })}
-                      </div>
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* Paginação */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t">
+                <div className="flex items-center justify-center gap-2 mt-6">
                   <Button
                     variant="outline"
                     size="sm"
@@ -653,7 +874,7 @@ export default function Reservations() {
                   >
                     Anterior
                   </Button>
-                  
+
                   <div className="flex gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       let pageNum;
@@ -666,14 +887,14 @@ export default function Reservations() {
                       } else {
                         pageNum = currentPage - 2 + i;
                       }
-                      
+
                       return (
                         <Button
                           key={pageNum}
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(pageNum)}
-                          className={currentPage === pageNum ? "bg-[#C47B3C] hover:bg-[#A56A38]" : ""}
+                          className={currentPage === pageNum ? "bg-gradient-to-r from-[#FA7318] to-[#f59e0c] hover:from-[#e66610] hover:to-[#dc8c08] text-white" : ""}
                         >
                           {pageNum}
                         </Button>
@@ -691,10 +912,9 @@ export default function Reservations() {
                   </Button>
                 </div>
               )}
-              </>
-                      )}
-          </CardContent>
-        </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
     </SubscriptionGuard>

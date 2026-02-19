@@ -9,61 +9,60 @@ export default function DashboardStats({ stats, isLoading }) {
       title: "Total",
       value: stats.total,
       icon: Calendar,
-      color: "from-[#C47B3C] to-[#A56A38]",
-      bgColor: "bg-amber-50"
+      iconBgColor: "bg-amber-100",
+      iconColor: "text-amber-600"
     },
     {
       title: "Confirmadas",
       value: stats.confirmed,
       icon: CheckCircle,
-      color: "from-[#C47B3C] to-[#A56A38]",
-      bgColor: "bg-amber-50"
+      iconBgColor: "bg-green-100",
+      iconColor: "text-green-600"
     },
     {
       title: "Lugares Reservados",
       value: stats.seatsReserved,
       subtitle: `de ${stats.totalSeats}`,
       icon: Users,
-      color: "from-[#C47B3C] to-[#A56A38]",
-      bgColor: "bg-amber-50"
+      iconBgColor: "bg-purple-100",
+      iconColor: "text-purple-600"
     },
     {
       title: "Ocupação",
       value: stats.totalSeats > 0 ? `${Math.round((stats.seatsReserved / stats.totalSeats) * 100)}%` : "0%",
       icon: TrendingUp,
-      color: "from-[#C47B3C] to-[#A56A38]",
-      bgColor: "bg-amber-50"
+      iconBgColor: "bg-pink-100",
+      iconColor: "text-pink-600"
     }
   ];
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3 md:mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
         {Array(4).fill(0).map((_, i) => (
-          <Skeleton key={i} className="h-20 md:h-24 rounded-xl" />
+          <Skeleton key={i} className="h-24 md:h-28 rounded-xl" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3 md:mb-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
       {statCards.map((stat, index) => (
-        <Card key={index} className="relative overflow-hidden shadow-lg border-none hover:shadow-xl transition-shadow duration-300">
-          <div className={`absolute top-0 right-0 w-16 h-16 md:w-24 md:h-24 ${stat.bgColor} rounded-full opacity-20 transform translate-x-6 md:translate-x-8 -translate-y-6 md:-translate-y-8`} />
-          <CardHeader className="p-2 md:p-3">
-            <div className="flex justify-between items-start gap-2">
+        <Card key={index} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <CardHeader className="p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] md:text-xs font-medium text-gray-500 mb-0.5 md:mb-1 truncate">{stat.title}</p>
-                <CardTitle className="text-lg md:text-2xl font-bold truncate">
+                <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                   {stat.value}
                 </CardTitle>
+                <p className="text-xs md:text-sm text-gray-600 truncate">{stat.title}</p>
                 {stat.subtitle && (
-                  <p className="text-[9px] md:text-xs text-gray-500 mt-0.5 truncate">{stat.subtitle}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{stat.subtitle}</p>
                 )}
               </div>
-              <div className={`p-1.5 md:p-2 rounded-lg bg-gradient-to-br ${stat.color} shadow-md shrink-0`}>
-                <stat.icon className="w-3 h-3 md:w-5 md:h-5 text-white" />
+              <div className={`${stat.iconBgColor} p-2.5 md:p-3 rounded-full shrink-0`}>
+                <stat.icon className={`w-5 h-5 md:w-6 md:h-6 ${stat.iconColor}`} />
               </div>
             </div>
           </CardHeader>

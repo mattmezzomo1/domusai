@@ -4,12 +4,13 @@ import { restaurantService, customerService, reservationService } from "@/servic
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Phone, Mail, Calendar, Users as UsersIcon, Download, Filter, Trash2 } from "lucide-react";
+import { Search, Phone, Mail, Calendar, Users as UsersIcon, Download, Filter, Trash2, Medal, Award, Gem, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import SubscriptionGuard from "../components/subscription/SubscriptionGuard";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import AddCustomerDialog from "../components/crm/AddCustomerDialog";
 import { Link } from "react-router-dom";
@@ -19,8 +20,9 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [birthdayFilter, setBirthdayFilter] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCustomers, setSelectedCustomers] = useState([]);
 
   const { data: restaurants } = useQuery({
@@ -73,10 +75,18 @@ export default function Customers() {
     const customerReservations = allReservations.filter(r => r.customer_id === customerId);
     return {
       total: customerReservations.length,
-      confirmed: customerReservations.filter(r => r.status === 'confirmed').length,
-      cancelled: customerReservations.filter(r => r.status === 'cancelled').length,
+      confirmed: customerReservations.filter(r => r.status?.toUpperCase() === 'CONFIRMED').length,
+      cancelled: customerReservations.filter(r => r.status?.toUpperCase() === 'CANCELLED').length,
       lastReservation: customerReservations.length > 0 ? customerReservations[0]?.date : null
     };
+  };
+
+  const getCustomerLevel = (reservationCount) => {
+    if (reservationCount === 0) return { name: 'Novo', icon: Star, color: 'text-gray-500', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' };
+    if (reservationCount >= 1 && reservationCount <= 5) return { name: 'Bronze', icon: Medal, color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' };
+    if (reservationCount >= 6 && reservationCount <= 15) return { name: 'Prata', icon: Medal, color: 'text-gray-400', bgColor: 'bg-gray-50', borderColor: 'border-gray-300' };
+    if (reservationCount >= 16 && reservationCount <= 30) return { name: 'Ouro', icon: Award, color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-300' };
+    return { name: 'Diamante', icon: Gem, color: 'text-purple-500', bgColor: 'bg-purple-50', borderColor: 'border-purple-300' };
   };
 
   const isBirthdayThisMonth = (birthDate) => {
@@ -103,17 +113,49 @@ export default function Customers() {
   };
 
   const filteredCustomers = customers.filter(customer => {
+    const stats = getCustomerStats(customer.id);
+    const level = getCustomerLevel(stats.total);
+
     const matchesSearch =
       customer.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.phone_whatsapp.includes(searchQuery) ||
+      (customer.cpf && customer.cpf.includes(searchQuery)) ||
       customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesBirthday =
-      birthdayFilter === "all" ||
-      (birthdayFilter === "birthday" && isBirthdayThisMonth(customer.birth_date));
+    const matchesLevel =
+      levelFilter === "all" || level.name === levelFilter;
 
-    return matchesSearch && matchesBirthday;
+    const matchesMonth =
+      monthFilter === "all" ||
+      (monthFilter === "birthday" && isBirthdayThisMonth(customer.birth_date));
+
+    return matchesSearch && matchesLevel && matchesMonth;
   });
+
+  // Calculate level statistics
+  const levelStats = {
+    total: customers.length,
+    bronze: customers.filter(c => {
+      const stats = getCustomerStats(c.id);
+      const level = getCustomerLevel(stats.total);
+      return level.name === 'Bronze';
+    }).length,
+    prata: customers.filter(c => {
+      const stats = getCustomerStats(c.id);
+      const level = getCustomerLevel(stats.total);
+      return level.name === 'Prata';
+    }).length,
+    ouro: customers.filter(c => {
+      const stats = getCustomerStats(c.id);
+      const level = getCustomerLevel(stats.total);
+      return level.name === 'Ouro';
+    }).length,
+    diamante: customers.filter(c => {
+      const stats = getCustomerStats(c.id);
+      const level = getCustomerLevel(stats.total);
+      return level.name === 'Diamante';
+    }).length,
+  };
 
   const toggleSelectCustomer = (customerId) => {
     setSelectedCustomers(prev => 
@@ -168,209 +210,258 @@ export default function Customers() {
 
   return (
     <SubscriptionGuard>
-    <div className="p-3 md:p-4">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-3 md:mb-4">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">CRM de Clientes</h1>
-          <p className="text-xs md:text-sm text-gray-500 mb-2">Gerencie seus clientes e histórico</p>
-          
-          <div className="flex flex-col sm:flex-row gap-3">
-            <AddCustomerDialog />
-            <Button
-              variant="outline"
-              onClick={exportToCSV}
-              className="w-full sm:w-auto hover:bg-amber-50 hover:text-[#A56A38] hover:border-[#A56A38]"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
-            </Button>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">CRM</h1>
+              <p className="text-sm text-gray-500">Gestão de clientes e fidelidade</p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={exportToCSV}
+                className="h-10 border-gray-300 hover:bg-gray-50"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+              <AddCustomerDialog />
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            {/* Total */}
+            <Card className="border-gray-200">
+              <CardContent className="p-4">
+                <div className="text-3xl font-bold text-gray-900 mb-1">{levelStats.total}</div>
+                <div className="text-sm text-gray-600">Total de Clientes</div>
+              </CardContent>
+            </Card>
+
+            {/* Bronze */}
+            <Card className="border-gray-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl font-bold text-gray-900">{levelStats.bronze}</div>
+                  <Medal className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="text-sm text-gray-600">Bronze</div>
+              </CardContent>
+            </Card>
+
+            {/* Prata */}
+            <Card className="border-gray-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl font-bold text-gray-900">{levelStats.prata}</div>
+                  <Medal className="w-5 h-5 text-gray-400" />
+                </div>
+                <div className="text-sm text-gray-600">Prata</div>
+              </CardContent>
+            </Card>
+
+            {/* Ouro */}
+            <Card className="border-gray-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl font-bold text-gray-900">{levelStats.ouro}</div>
+                  <Award className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div className="text-sm text-gray-600">Ouro</div>
+              </CardContent>
+            </Card>
+
+            {/* Diamante */}
+            <Card className="border-gray-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl font-bold text-gray-900">{levelStats.diamante}</div>
+                  <Gem className="w-5 h-5 text-purple-500" />
+                </div>
+                <div className="text-sm text-gray-600">Diamante</div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
-        <Card className="shadow-lg border-none">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b p-4 md:p-6">
-            <CardTitle className="text-base md:text-lg flex items-center gap-2">
-              <UsersIcon className="w-4 h-4 md:w-5 md:h-5 text-[#A56A38]" />
-              Base de Clientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            {/* Search and Filters */}
-            <div className="space-y-3 mb-6">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
-                <Input
-                  placeholder="Buscar por nome, telefone ou email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base"
-                />
-              </div>
-
-              {/* Filter Toggle (Mobile) */}
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="w-full md:hidden"
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-              </Button>
-
-              {/* Filters */}
-              <div className={`${showFilters ? 'block' : 'hidden md:block'}`}>
-                <Select value={birthdayFilter} onValueChange={setBirthdayFilter}>
-                  <SelectTrigger className="w-full h-10 md:h-12 text-sm md:text-base">
-                    <SelectValue placeholder="Filtrar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Clientes</SelectItem>
-                    <SelectItem value="birthday">🎂 Aniversariantes do Mês</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Toolbar */}
+        <div className="bg-white border border-gray-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center gap-3">
+            {/* Checkbox Selecionar tudo */}
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all"
+                checked={selectedCustomers.length === filteredCustomers.length && filteredCustomers.length > 0}
+                onCheckedChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <label htmlFor="select-all" className="text-sm text-gray-600 whitespace-nowrap cursor-pointer">
+                Selecionar tudo
+              </label>
             </div>
 
-            {/* Bulk Actions Bar */}
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome, CPF ou telefone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm border-gray-300"
+              />
+            </div>
+
+            {/* Filters */}
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="w-40 h-9 text-sm border-gray-300">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Bronze">Bronze</SelectItem>
+                <SelectItem value="Prata">Prata</SelectItem>
+                <SelectItem value="Ouro">Ouro</SelectItem>
+                <SelectItem value="Diamante">Diamante</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={monthFilter} onValueChange={setMonthFilter}>
+              <SelectTrigger className="w-40 h-9 text-sm border-gray-300">
+                <SelectValue placeholder="Todos os meses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">todos os meses</SelectItem>
+                <SelectItem value="birthday">Aniversariantes</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40 h-9 text-sm border-gray-300">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Results count */}
+          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente encontrado' : 'clientes encontrados'}
+            </div>
             {selectedCustomers.length > 0 && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                <p className="text-sm font-medium text-blue-900">
-                  {selectedCustomers.length} cliente(s) selecionado(s)
-                </p>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={bulkDeleteMutation.isPending}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {bulkDeleteMutation.isPending ? 'Excluindo...' : 'Excluir Selecionados'}
-                </Button>
-              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={bulkDeleteMutation.isPending}
+                className="h-8"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {bulkDeleteMutation.isPending ? 'Excluindo...' : `Excluir ${selectedCustomers.length}`}
+              </Button>
             )}
+          </div>
+        </div>
 
-            {/* Results Count and Select All */}
-            <div className="mb-4 flex items-center justify-between">
-              <div className="text-xs md:text-sm text-gray-600">
-                {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente encontrado' : 'clientes encontrados'}
-              </div>
-              {filteredCustomers.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleSelectAll}
-                  className="text-xs"
-                >
-                  {selectedCustomers.length === filteredCustomers.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
-                </Button>
-              )}
-            </div>
+        {/* Customers List */}
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array(5).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="text-center py-16 bg-white border border-gray-200 rounded-lg">
+            <UsersIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhum cliente encontrado</h3>
+            <p className="text-base text-gray-500">
+              {searchQuery || levelFilter !== "all" || monthFilter !== "all" ? "Tente ajustar os filtros" : "Adicione seu primeiro cliente"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredCustomers.map((customer) => {
+              const stats = getCustomerStats(customer.id);
+              const level = getCustomerLevel(stats.total);
+              const LevelIcon = level.icon;
+              const initials = customer.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-            {/* Customers List */}
-            {isLoading ? (
-              <div className="space-y-3">
-                {Array(5).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-24 md:h-32 w-full" />
-                ))}
-              </div>
-            ) : filteredCustomers.length === 0 ? (
-              <div className="text-center py-12 md:py-16">
-                <UsersIcon className="w-12 h-12 md:w-16 md:h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">Nenhum cliente encontrado</h3>
-                <p className="text-sm md:text-base text-gray-500">
-                  {searchQuery || birthdayFilter === "birthday" ? "Tente ajustar os filtros" : "Adicione seu primeiro cliente"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 md:space-y-4">
-                {filteredCustomers.map((customer) => {
-                  const stats = getCustomerStats(customer.id);
-                  return (
-                    <div key={customer.id} className="bg-gray-50 rounded-lg p-3 md:p-4 hover:bg-gray-100 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedCustomers.includes(customer.id)}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            toggleSelectCustomer(customer.id);
-                          }}
-                          className="w-4 h-4 mt-1 cursor-pointer shrink-0"
-                        />
-                        <Link
-                          to={`${createPageUrl('CustomerDetail')}?id=${customer.id}`}
-                          className="flex-1 block"
-                        >
-                          {/* Header */}
-                          <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-base md:text-lg text-gray-900 truncate">
-                                {customer.full_name}
-                              </h3>
-                              {customer.notes && (
-                                <p className="text-xs md:text-sm text-gray-500 line-clamp-1">{customer.notes}</p>
-                              )}
-                            </div>
-                            <div onClick={(e) => e.preventDefault()}>
-                              <WhatsAppButton
-                                phone={customer.phone_whatsapp}
-                                message={`Olá ${customer.full_name}! Tudo bem?`}
-                                size="sm"
-                                className="text-xs"
-                              />
-                            </div>
-                          </div>
+              return (
+                <div key={customer.id} className="bg-white border border-gray-200 rounded-lg p-3.5 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    {/* Checkbox */}
+                    <Checkbox
+                      checked={selectedCustomers.includes(customer.id)}
+                      onCheckedChange={() => toggleSelectCustomer(customer.id)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
 
-                          {/* Contact Info */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-xs md:text-sm">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Phone className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                              <span className="font-medium truncate">{customer.phone_whatsapp}</span>
-                            </div>
-                            {customer.email && (
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Mail className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                                <span className="truncate">{customer.email}</span>
-                              </div>
-                            )}
-                            {customer.birth_date && formatBirthDate(customer.birth_date) && (
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Calendar className="w-3 h-3 md:w-4 md:h-4 text-gray-400 shrink-0" />
-                                <span className="truncate">{formatBirthDate(customer.birth_date)}</span>
-                              </div>
-                            )}
-                          </div>
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FA7318] to-[#f59e0c] flex items-center justify-center shrink-0">
+                      <span className="text-white font-semibold text-sm">{initials}</span>
+                    </div>
 
-                          {/* Stats */}
-                          <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
-                            <Badge variant="outline" className="bg-amber-50 text-[#A56A38] border-amber-200 text-[10px] md:text-xs">
-                              {stats.total} reservas
-                            </Badge>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] md:text-xs">
-                              {stats.confirmed} confirmadas
-                            </Badge>
-                            {stats.cancelled > 0 && (
-                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] md:text-xs">
-                                {stats.cancelled} canceladas
-                              </Badge>
-                            )}
-                            {stats.lastReservation && (
-                              <Badge variant="outline" className="text-[10px] md:text-xs">
-                                Última: {format(new Date(stats.lastReservation), "dd/MM/yyyy")}
-                              </Badge>
-                            )}
-                          </div>
-                        </Link>
+                    {/* Customer Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-sm text-gray-900 truncate">
+                          {customer.full_name}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span className="font-mono">{customer.phone_whatsapp}</span>
+                        {customer.cpf && <span>• {customer.cpf}</span>}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                    {/* Level Badge */}
+                    <Badge className={`${level.bgColor} ${level.color} border-0 px-2.5 py-1 text-xs font-medium`}>
+                      <LevelIcon className="w-3 h-3 mr-1" />
+                      {level.name}
+                    </Badge>
+
+                    {/* Reservations Count */}
+                    <div className="text-center px-3">
+                      <div className="text-sm font-semibold text-gray-900">{stats.total} reservas</div>
+                      <div className="text-xs text-gray-500">{stats.lastReservation ? format(new Date(stats.lastReservation), "dd/MM/yy") : 'Sem reservas'}</div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <WhatsAppButton
+                          phone={customer.phone_whatsapp}
+                          message={`Olá ${customer.full_name}! Tudo bem?`}
+                          size="sm"
+                          className="h-9 text-xs"
+                        />
+                      </div>
+                      <Link to={`${createPageUrl('CustomerDetail')}?id=${customer.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-gray-600 hover:bg-gray-100"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
     </SubscriptionGuard>

@@ -36,6 +36,16 @@ export const restaurantService = {
     return base44.entities.Restaurant.filter(filters, sort);
   },
 
+  getBySlug: async (slug) => {
+    if (USE_MOCK) {
+      const restaurants = await mockDataService.restaurants.filter({ slug }, null);
+      return restaurants[0] || null;
+    }
+    if (USE_NEW_API) return newRestaurantService.getBySlug(slug);
+    const restaurants = await base44.entities.Restaurant.filter({ slug });
+    return restaurants[0] || null;
+  },
+
   create: async (data) => {
     if (USE_MOCK) return mockDataService.restaurants.create(data);
     if (USE_NEW_API) return newRestaurantService.create(data);
