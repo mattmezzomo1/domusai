@@ -45,7 +45,7 @@ export class ReservationsService {
         slot_time: data.slot_time,
         party_size: data.party_size,
         table_id: data.table_id,
-        linked_tables: data.linked_tables || [],
+        linked_tables: JSON.stringify(data.linked_tables || []),
         environment_id: data.environment_id,
         // Convert status to UPPERCASE to match enum ReservationStatus
         status: (data.status ? data.status.toUpperCase() : 'PENDING') as any,
@@ -56,7 +56,10 @@ export class ReservationsService {
       },
     });
 
-    return reservation as ReservationResponseDTO;
+    return {
+      ...reservation,
+      linked_tables: JSON.parse(reservation.linked_tables as string),
+    } as ReservationResponseDTO;
   }
 
   async findAll(ownerEmail: string, filters?: FilterParams): Promise<ReservationResponseDTO[]> {
@@ -77,7 +80,10 @@ export class ReservationsService {
       },
     });
 
-    return reservations as any[];
+    return reservations.map(reservation => ({
+      ...reservation,
+      linked_tables: JSON.parse(reservation.linked_tables as string),
+    })) as any[];
   }
 
   async findById(id: string, ownerEmail: string): Promise<ReservationResponseDTO> {
@@ -92,7 +98,10 @@ export class ReservationsService {
       throw new AppError('Reservation not found', 404);
     }
 
-    return reservation as any;
+    return {
+      ...reservation,
+      linked_tables: JSON.parse(reservation.linked_tables as string),
+    } as any;
   }
 
   async findByCode(code: string): Promise<ReservationResponseDTO> {
@@ -161,6 +170,7 @@ export class ReservationsService {
     const updateData: any = { ...data, updated_date: new Date() };
     if (updateData.status) updateData.status = updateData.status.toUpperCase();
     if (updateData.source) updateData.source = updateData.source.toUpperCase();
+    if (updateData.linked_tables) updateData.linked_tables = JSON.stringify(updateData.linked_tables);
 
     console.log('📝 Atualizando reserva pública:', {
       id,
@@ -180,7 +190,10 @@ export class ReservationsService {
       code: updated.reservation_code
     });
 
-    return updated as ReservationResponseDTO;
+    return {
+      ...updated,
+      linked_tables: JSON.parse(updated.linked_tables as string),
+    } as ReservationResponseDTO;
   }
 
   async update(id: string, ownerEmail: string, data: UpdateReservationDTO): Promise<ReservationResponseDTO> {
@@ -196,13 +209,17 @@ export class ReservationsService {
     const updateData: any = { ...data, updated_date: new Date() };
     if (updateData.status) updateData.status = updateData.status.toUpperCase();
     if (updateData.source) updateData.source = updateData.source.toUpperCase();
+    if (updateData.linked_tables) updateData.linked_tables = JSON.stringify(updateData.linked_tables);
 
     const updated = await prisma.reservation.update({
       where: { id },
       data: updateData,
     });
 
-    return updated as ReservationResponseDTO;
+    return {
+      ...updated,
+      linked_tables: JSON.parse(updated.linked_tables as string),
+    } as ReservationResponseDTO;
   }
 
   async delete(id: string, ownerEmail: string): Promise<{ message: string }> {

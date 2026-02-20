@@ -23,13 +23,16 @@ export class ShiftsService {
         default_dwell_minutes: data.default_dwell_minutes || 90,
         default_buffer_minutes: data.default_buffer_minutes || 10,
         max_capacity: data.max_capacity,
-        days_of_week: data.days_of_week,
+        days_of_week: JSON.stringify(data.days_of_week),
         active: data.active !== undefined ? data.active : true,
         updated_date: new Date(),
       },
     });
 
-    return shift as ShiftResponseDTO;
+    return {
+      ...shift,
+      days_of_week: JSON.parse(shift.days_of_week as string),
+    } as ShiftResponseDTO;
   }
 
   async findAll(ownerEmail: string, filters?: FilterParams): Promise<ShiftResponseDTO[]> {
@@ -43,7 +46,10 @@ export class ShiftsService {
       orderBy: { start_time: 'asc' },
     });
 
-    return shifts as ShiftResponseDTO[];
+    return shifts.map(shift => ({
+      ...shift,
+      days_of_week: JSON.parse(shift.days_of_week as string),
+    })) as ShiftResponseDTO[];
   }
 
   async findById(id: string, ownerEmail: string): Promise<ShiftResponseDTO> {
@@ -55,7 +61,10 @@ export class ShiftsService {
       throw new AppError('Shift not found', 404);
     }
 
-    return shift as ShiftResponseDTO;
+    return {
+      ...shift,
+      days_of_week: JSON.parse(shift.days_of_week as string),
+    } as ShiftResponseDTO;
   }
 
   async update(id: string, ownerEmail: string, data: UpdateShiftDTO): Promise<ShiftResponseDTO> {
@@ -67,12 +76,20 @@ export class ShiftsService {
       throw new AppError('Shift not found', 404);
     }
 
+    const updateData: any = { ...data, updated_date: new Date() };
+    if (data.days_of_week) {
+      updateData.days_of_week = JSON.stringify(data.days_of_week);
+    }
+
     const updated = await prisma.shift.update({
       where: { id },
-      data: { ...data, updated_date: new Date() },
+      data: updateData,
     });
 
-    return updated as ShiftResponseDTO;
+    return {
+      ...updated,
+      days_of_week: JSON.parse(updated.days_of_week as string),
+    } as ShiftResponseDTO;
   }
 
   async delete(id: string, ownerEmail: string): Promise<{ message: string }> {
