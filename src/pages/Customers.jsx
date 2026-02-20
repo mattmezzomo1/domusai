@@ -33,6 +33,12 @@ export default function Customers() {
 
   const selectedRestaurant = restaurants[0];
 
+  // Helper function to format WhatsApp message
+  const formatWhatsAppMessage = (customerName) => {
+    const template = selectedRestaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
+    return template.replace(/{nome}/g, customerName);
+  };
+
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers', selectedRestaurant?.id],
     queryFn: async () => {
@@ -439,7 +445,7 @@ export default function Customers() {
                       <div onClick={(e) => e.stopPropagation()}>
                         <WhatsAppButton
                           phone={customer.phone_whatsapp}
-                          message={`Olá ${customer.full_name}! Tudo bem?`}
+                          message={formatWhatsAppMessage(customer.full_name)}
                           size="sm"
                           className="h-9 text-xs"
                         />

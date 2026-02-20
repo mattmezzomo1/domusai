@@ -34,6 +34,12 @@ export default function CustomerDetail() {
 
   const restaurant = restaurants[0];
 
+  // Helper function to format WhatsApp message
+  const formatWhatsAppMessage = (customerName) => {
+    const template = restaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
+    return template.replace(/{nome}/g, customerName);
+  };
+
   const { data: reservations = [], isLoading: loadingReservations } = useQuery({
     queryKey: ['customer-reservations', customerId],
     queryFn: async () => {
@@ -152,9 +158,9 @@ export default function CustomerDetail() {
               <p className="text-gray-500">Perfil completo e histórico de reservas</p>
             </div>
             <div className="flex gap-3">
-              <WhatsAppButton 
+              <WhatsAppButton
                 phone={customer.phone_whatsapp}
-                message={`Olá ${customer.full_name}! Tudo bem?`}
+                message={formatWhatsAppMessage(customer.full_name)}
                 size="lg"
               />
               <EditCustomerDialog customer={customer} />

@@ -149,7 +149,25 @@ export default function ShiftsSettings() {
       5: 'Sex',
       6: 'Sáb',
     };
-    return daysOfWeek?.sort((a, b) => a - b).map(day => dayMap[day]) || [];
+
+    // Handle different data formats
+    if (!daysOfWeek) return [];
+
+    // If it's a string, try to parse it as JSON
+    let days = daysOfWeek;
+    if (typeof daysOfWeek === 'string') {
+      try {
+        days = JSON.parse(daysOfWeek);
+      } catch (e) {
+        console.error('Error parsing days_of_week:', e);
+        return [];
+      }
+    }
+
+    // Ensure it's an array
+    if (!Array.isArray(days)) return [];
+
+    return days.sort((a, b) => a - b).map(day => dayMap[day]);
   };
 
   if (!restaurant) {

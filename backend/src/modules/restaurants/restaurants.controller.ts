@@ -35,7 +35,9 @@ export class RestaurantsController {
     const id = req.params.id as string;
     const ownerEmail = req.user!.email;
     const data: UpdateRestaurantDTO = req.body;
+    console.log('🔍 [Restaurant Controller] Update request:', { id, data });
     const restaurant = await restaurantsService.update(id, ownerEmail, data);
+    console.log('✅ [Restaurant Controller] Update successful:', restaurant);
     res.json(restaurant);
   });
 

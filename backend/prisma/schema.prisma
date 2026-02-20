@@ -1,6 +1,3 @@
-// Prisma Schema para Domus AI - Sistema de Gestão de Reservas
-// Database: MariaDB
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,38 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// AUTENTICAÇÃO E USUÁRIOS
-// ============================================
-
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  password     String
-  full_name    String
-  role         Role     @default(USER)
-  avatar_url   String?
-  created_date DateTime @default(now())
-  updated_date DateTime @updatedAt
-
-  // Relacionamentos
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  full_name     String
+  role          Role           @default(USER)
+  avatar_url    String?
+  created_date  DateTime       @default(now())
+  updated_date  DateTime       @updatedAt
   restaurants   Restaurant[]
   subscriptions Subscription[]
 
   @@map("users")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-// ============================================
-// ASSINATURAS
-// ============================================
-
 model Subscription {
-  id                     String            @id @default(uuid())
+  id                     String             @id @default(uuid())
   user_email             String
   plan_type              PlanType
   status                 SubscriptionStatus
@@ -50,15 +32,172 @@ model Subscription {
   current_period_start   DateTime
   current_period_end     DateTime
   cancelled_at           DateTime?
-  created_date           DateTime          @default(now())
-  updated_date           DateTime          @updatedAt
-
-  // Relacionamentos
-  user User @relation(fields: [user_email], references: [email], onDelete: Cascade)
+  created_date           DateTime           @default(now())
+  updated_date           DateTime           @updatedAt
+  user                   User               @relation(fields: [user_email], references: [email], onDelete: Cascade)
 
   @@index([user_email])
   @@index([status])
   @@map("subscriptions")
+}
+
+model Restaurant {
+  id                         String        @id @default(uuid())
+  owner_email                String
+  name                       String
+  slug                       String        @unique
+  phone                      String
+  address                    String
+  total_capacity             Int
+  timezone                   String        @default("America/Sao_Paulo")
+  public                     Boolean       @default(true)
+  operating_hours            String?       @db.LongText
+  whatsapp_message_template  String?       @default("Olá {nome}! Tudo bem?") @db.Text
+  max_party_size             Int?          @default(12)
+  max_online_party_size      Int?          @default(8)
+  booking_cutoff_hours       Float?        @default(2)
+  cancellation_cutoff_hours  Float?        @default(2)
+  modification_cutoff_hours  Float?        @default(2)
+  late_tolerance_minutes     Int?          @default(15)
+  enable_waitlist            Boolean       @default(true)
+  enable_table_joining       Boolean       @default(true)
+  enable_modifications       Boolean       @default(true)
+  created_date               DateTime      @default(now())
+  updated_date               DateTime      @updatedAt
+  customers                  Customer[]
+  environments               Environment[]
+  reservations               Reservation[]
+  owner                      User          @relation(fields: [owner_email], references: [email], onDelete: Cascade)
+  shifts                     Shift[]
+  tables                     Table[]
+
+  @@index([owner_email])
+  @@index([slug])
+  @@map("restaurants")
+}
+
+model Customer {
+  id                 String        @id @default(uuid())
+  restaurant_id      String
+  owner_email        String
+  full_name          String
+  phone_whatsapp     String
+  email              String?
+  birth_date         DateTime?
+  total_reservations Int           @default(0)
+  total_spent        Decimal       @default(0.00) @db.Decimal(10, 2)
+  created_date       DateTime      @default(now())
+  updated_date       DateTime      @updatedAt
+  restaurant         Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  reservations       Reservation[]
+
+  @@index([restaurant_id])
+  @@index([phone_whatsapp])
+  @@index([email])
+  @@map("customers")
+}
+
+model Environment {
+  id            String        @id @default(uuid())
+  restaurant_id String
+  owner_email   String
+  name          String
+  capacity      Int?
+  created_date  DateTime      @default(now())
+  updated_date  DateTime      @updatedAt
+  is_active     Boolean       @default(true)
+  restaurant    Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  reservations  Reservation[]
+  tables        Table[]
+
+  @@index([restaurant_id])
+  @@map("environments")
+}
+
+model Table {
+  id             String        @id @default(uuid())
+  restaurant_id  String
+  owner_email    String
+  name           String
+  seats          Int
+  environment_id String?
+  is_active      Boolean       @default(true)
+  status         TableStatus   @default(AVAILABLE)
+  position_x     Int?
+  position_y     Int?
+  created_date   DateTime      @default(now())
+  updated_date   DateTime      @updatedAt
+  reservations   Reservation[]
+  environment    Environment?  @relation(fields: [environment_id], references: [id])
+  restaurant     Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id])
+  @@index([environment_id])
+  @@index([status])
+  @@map("tables")
+}
+
+model Shift {
+  id                     String        @id @default(uuid())
+  restaurant_id          String
+  owner_email            String
+  name                   String
+  start_time             String
+  end_time               String
+  slot_interval_minutes  Int           @default(15)
+  default_dwell_minutes  Int           @default(90)
+  default_buffer_minutes Int           @default(10)
+  max_capacity           Int?
+  days_of_week           String        @db.LongText
+  active                 Boolean       @default(true)
+  created_date           DateTime      @default(now())
+  updated_date           DateTime      @updatedAt
+  reservations           Reservation[]
+  restaurant             Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id])
+  @@index([active])
+  @@map("shifts")
+}
+
+model Reservation {
+  id               String            @id @default(uuid())
+  restaurant_id    String
+  owner_email      String
+  customer_id      String
+  reservation_code String            @unique
+  date             DateTime          @db.Date
+  shift_id         String
+  slot_time        String
+  party_size       Int
+  table_id         String
+  linked_tables    String            @db.LongText
+  environment_id   String?
+  status           ReservationStatus @default(PENDING)
+  source           ReservationSource
+  notes            String?           @db.Text
+  created_date     DateTime          @default(now())
+  updated_date     DateTime          @updatedAt
+  customer         Customer          @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  environment      Environment?      @relation(fields: [environment_id], references: [id])
+  restaurant       Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  shift            Shift             @relation(fields: [shift_id], references: [id], onDelete: Cascade)
+  table            Table             @relation(fields: [table_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id])
+  @@index([customer_id])
+  @@index([date])
+  @@index([status])
+  @@index([shift_id])
+  @@index([table_id])
+  @@index([reservation_code])
+  @@index([environment_id], map: "reservations_environment_id_fkey")
+  @@map("reservations")
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 enum PlanType {
@@ -73,189 +212,10 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
-// ============================================
-// RESTAURANTES
-// ============================================
-
-model Restaurant {
-  id              String   @id @default(uuid())
-  owner_email     String
-  name            String
-  slug            String   @unique
-  phone           String
-  address         String
-  total_capacity  Int
-  timezone        String   @default("America/Sao_Paulo")
-  public          Boolean  @default(true)
-  operating_hours Json?
-  created_date    DateTime @default(now())
-  updated_date    DateTime @updatedAt
-
-  // Relacionamentos
-  owner        User          @relation(fields: [owner_email], references: [email], onDelete: Cascade)
-  customers    Customer[]
-  tables       Table[]
-  environments Environment[]
-  shifts       Shift[]
-  reservations Reservation[]
-
-  @@index([owner_email])
-  @@index([slug])
-  @@map("restaurants")
-}
-
-// ============================================
-// CLIENTES
-// ============================================
-
-model Customer {
-  id                 String   @id @default(uuid())
-  restaurant_id      String
-  owner_email        String
-  full_name          String
-  phone_whatsapp     String
-  email              String?
-  birth_date         DateTime?
-  total_reservations Int      @default(0)
-  total_spent        Decimal  @default(0) @db.Decimal(10, 2)
-  created_date       DateTime @default(now())
-  updated_date       DateTime @updatedAt
-
-  // Relacionamentos
-  restaurant   Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-
-  @@index([restaurant_id])
-  @@index([phone_whatsapp])
-  @@index([email])
-  @@map("customers")
-}
-
-// ============================================
-// AMBIENTES
-// ============================================
-
-model Environment {
-  id            String   @id @default(uuid())
-  restaurant_id String
-  owner_email   String
-  name          String
-  capacity      Int?
-  is_active     Boolean  @default(true)
-  created_date  DateTime @default(now())
-  updated_date  DateTime @updatedAt
-
-  // Relacionamentos
-  restaurant   Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  tables       Table[]
-  reservations Reservation[]
-
-  @@index([restaurant_id])
-  @@map("environments")
-}
-
-// ============================================
-// MESAS
-// ============================================
-
-model Table {
-  id             String      @id @default(uuid())
-  restaurant_id  String
-  owner_email    String
-  name           String
-  seats          Int
-  environment_id String?
-  is_active      Boolean     @default(true)
-  status         TableStatus @default(AVAILABLE)
-  position_x     Int?
-  position_y     Int?
-  created_date   DateTime    @default(now())
-  updated_date   DateTime    @updatedAt
-
-  // Relacionamentos
-  restaurant   Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  environment  Environment?  @relation(fields: [environment_id], references: [id], onDelete: SetNull)
-  reservations Reservation[]
-
-  @@index([restaurant_id])
-  @@index([environment_id])
-  @@index([status])
-  @@map("tables")
-}
-
 enum TableStatus {
   AVAILABLE
   UNAVAILABLE
   BLOCKED
-}
-
-// ============================================
-// TURNOS
-// ============================================
-
-model Shift {
-  id                      String   @id @default(uuid())
-  restaurant_id           String
-  owner_email             String
-  name                    String
-  start_time              String // HH:mm format
-  end_time                String // HH:mm format
-  slot_interval_minutes   Int      @default(15)
-  default_dwell_minutes   Int      @default(90)
-  default_buffer_minutes  Int      @default(10)
-  max_capacity            Int?
-  days_of_week            Json // Array de números [0-6]
-  active                  Boolean  @default(true)
-  created_date            DateTime @default(now())
-  updated_date            DateTime @updatedAt
-
-  // Relacionamentos
-  restaurant   Restaurant    @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-
-  @@index([restaurant_id])
-  @@index([active])
-  @@map("shifts")
-}
-
-// ============================================
-// RESERVAS
-// ============================================
-
-model Reservation {
-  id               String            @id @default(uuid())
-  restaurant_id    String
-  owner_email      String
-  customer_id      String
-  reservation_code String            @unique
-  date             DateTime          @db.Date
-  shift_id         String
-  slot_time        String // HH:mm format
-  party_size       Int
-  table_id         String
-  linked_tables    Json // Array de IDs de mesas
-  environment_id   String?
-  status           ReservationStatus @default(PENDING)
-  source           ReservationSource
-  notes            String?           @db.Text
-  created_date     DateTime          @default(now())
-  updated_date     DateTime          @updatedAt
-
-  // Relacionamentos
-  restaurant  Restaurant   @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  customer    Customer     @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  table       Table        @relation(fields: [table_id], references: [id], onDelete: Cascade)
-  shift       Shift        @relation(fields: [shift_id], references: [id], onDelete: Cascade)
-  environment Environment? @relation(fields: [environment_id], references: [id], onDelete: SetNull)
-
-  @@index([restaurant_id])
-  @@index([customer_id])
-  @@index([date])
-  @@index([status])
-  @@index([shift_id])
-  @@index([table_id])
-  @@index([reservation_code])
-  @@map("reservations")
 }
 
 enum ReservationStatus {
@@ -269,4 +229,3 @@ enum ReservationSource {
   PHONE
   ONLINE
 }
-

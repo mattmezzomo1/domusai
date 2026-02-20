@@ -28,10 +28,15 @@ export default function TablesSettings() {
   // Bulk creation state
   const [bulkSeats, setBulkSeats] = useState('');
   const [bulkQuantity, setBulkQuantity] = useState('');
+  const [bulkEnvironmentId, setBulkEnvironmentId] = useState('');
   const [bulkSuccess, setBulkSuccess] = useState(null);
   
   // Multiple selection state
   const [selectedTables, setSelectedTables] = useState([]);
+
+  // Inline editing state
+  const [editingTableId, setEditingTableId] = useState(null);
+  const [editingTableName, setEditingTableName] = useState('');
 
   const { data: restaurants } = useQuery({
     queryKey: ['restaurants'],
@@ -113,6 +118,15 @@ export default function TablesSettings() {
     },
   });
 
+  const updateNameMutation = useMutation({
+    mutationFn: ({ id, name }) => tableService.update(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      setEditingTableId(null);
+      setEditingTableName('');
+    },
+  });
+
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids) => {
       await Promise.all(ids.map(id => tableService.delete(id)));
@@ -134,6 +148,7 @@ export default function TablesSettings() {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       setBulkSeats('');
       setBulkQuantity('');
+      setBulkEnvironmentId('');
       setBulkSuccess('Mesas criadas com sucesso!');
       setTimeout(() => setBulkSuccess(null), 3000);
     },
@@ -187,7 +202,7 @@ export default function TablesSettings() {
 
     const quantity = parseInt(bulkQuantity);
     const seats = parseInt(bulkSeats);
-    
+
     // Get the highest number from existing tables
     const existingNumbers = tables
       .map(t => {
@@ -195,7 +210,7 @@ export default function TablesSettings() {
         return match ? parseInt(match[0]) : 0;
       })
       .filter(n => !isNaN(n));
-    
+
     const startNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
 
     // Create array of tables
@@ -204,7 +219,8 @@ export default function TablesSettings() {
       name: `Mesa ${startNumber + index}`,
       seats: seats,
       status: 'available',
-      is_active: true
+      is_active: true,
+      environment_id: bulkEnvironmentId && bulkEnvironmentId !== 'none' ? bulkEnvironmentId : null
     }));
 
     bulkCreateMutation.mutate(newTables);
@@ -230,6 +246,32 @@ export default function TablesSettings() {
     if (selectedTables.length === 0) return;
     if (confirm(`Tem certeza que deseja excluir ${selectedTables.length} mesa(s)?`)) {
       bulkDeleteMutation.mutate(selectedTables);
+    }
+  };
+
+  const startEditingName = (table) => {
+    setEditingTableId(table.id);
+    setEditingTableName(table.name);
+  };
+
+  const cancelEditingName = () => {
+    setEditingTableId(null);
+    setEditingTableName('');
+  };
+
+  const saveTableName = (tableId) => {
+    if (!editingTableName.trim()) {
+      alert('O nome da mesa não pode estar vazio');
+      return;
+    }
+    updateNameMutation.mutate({ id: tableId, name: editingTableName.trim() });
+  };
+
+  const handleNameKeyPress = (e, tableId) => {
+    if (e.key === 'Enter') {
+      saveTableName(tableId);
+    } else if (e.key === 'Escape') {
+      cancelEditingName();
     }
   };
 
@@ -340,7 +382,7 @@ export default function TablesSettings() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBulkCreate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bulk-seats">Lugares por Mesa</Label>
                   <Input
@@ -363,9 +405,25 @@ export default function TablesSettings() {
                     placeholder="Ex: 10"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-environment">Ambiente (Opcional)</Label>
+                  <Select value={bulkEnvironmentId} onValueChange={setBulkEnvironmentId}>
+                    <SelectTrigger id="bulk-environment">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem ambiente</SelectItem>
+                      {environments.map((env) => (
+                        <SelectItem key={env.id} value={env.id}>
+                          {env.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 flex items-end">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     disabled={!bulkSeats || !bulkQuantity || bulkCreateMutation.isPending}
                   >
@@ -375,7 +433,10 @@ export default function TablesSettings() {
               </div>
               {bulkSeats && bulkQuantity && (
                 <p className="text-sm text-gray-600 bg-white/50 p-3 rounded-lg">
-                  💡 Serão criadas <strong>{bulkQuantity} mesas</strong> com <strong>{bulkSeats} lugares</strong> cada, 
+                  💡 Serão criadas <strong>{bulkQuantity} mesas</strong> com <strong>{bulkSeats} lugares</strong> cada
+                  {bulkEnvironmentId && bulkEnvironmentId !== 'none' && environments.find(e => e.id === bulkEnvironmentId) && (
+                    <>, no ambiente <strong>{environments.find(e => e.id === bulkEnvironmentId).name}</strong></>
+                  )},
                   nomeadas como: Mesa {tables.length + 1}, Mesa {tables.length + 2}, etc.
                 </p>
               )}
@@ -438,7 +499,7 @@ export default function TablesSettings() {
                 </TableHeader>
                 <TableBody>
                   {tables.map((table) => (
-                    <TableRow key={table.id}>
+                    <TableRow key={table.id} className="group">
                       <TableCell>
                         <input
                           type="checkbox"
@@ -447,7 +508,47 @@ export default function TablesSettings() {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </TableCell>
-                      <TableCell className="font-semibold">{table.name}</TableCell>
+                      <TableCell>
+                        {editingTableId === table.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editingTableName}
+                              onChange={(e) => setEditingTableName(e.target.value)}
+                              onKeyDown={(e) => handleNameKeyPress(e, table.id)}
+                              className="h-8 w-40"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => saveTableName(table.id)}
+                              disabled={updateNameMutation.isPending}
+                              className="h-8 px-2"
+                            >
+                              ✓
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={cancelEditingName}
+                              className="h-8 px-2"
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{table.name}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingName(table)}
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-gray-400" />
@@ -532,7 +633,45 @@ export default function TablesSettings() {
                           className="w-4 h-4 mt-1 cursor-pointer"
                         />
                         <div className="flex-1">
-                          <p className="font-semibold text-lg">{table.name}</p>
+                          {editingTableId === table.id ? (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Input
+                                value={editingTableName}
+                                onChange={(e) => setEditingTableName(e.target.value)}
+                                onKeyDown={(e) => handleNameKeyPress(e, table.id)}
+                                className="h-8"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => saveTableName(table.id)}
+                                disabled={updateNameMutation.isPending}
+                                className="h-8 px-2"
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={cancelEditingName}
+                                className="h-8 px-2"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-lg">{table.name}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingName(table)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 mt-1">
                             <Users className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">{table.seats} lugares</span>

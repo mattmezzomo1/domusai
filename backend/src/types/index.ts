@@ -61,6 +61,16 @@ export interface UpdateRestaurantDTO {
   timezone?: string;
   public?: boolean;
   operating_hours?: any;
+  whatsapp_message_template?: string;
+  max_party_size?: number;
+  max_online_party_size?: number;
+  booking_cutoff_hours?: number;
+  cancellation_cutoff_hours?: number;
+  modification_cutoff_hours?: number;
+  late_tolerance_minutes?: number;
+  enable_waitlist?: boolean;
+  enable_table_joining?: boolean;
+  enable_modifications?: boolean;
 }
 
 export interface RestaurantResponseDTO {
@@ -74,6 +84,16 @@ export interface RestaurantResponseDTO {
   timezone: string;
   public: boolean;
   operating_hours: any;
+  whatsapp_message_template?: string;
+  max_party_size?: number;
+  max_online_party_size?: number;
+  booking_cutoff_hours?: number;
+  cancellation_cutoff_hours?: number;
+  modification_cutoff_hours?: number;
+  late_tolerance_minutes?: number;
+  enable_waitlist?: boolean;
+  enable_table_joining?: boolean;
+  enable_modifications?: boolean;
   created_date: Date;
   updated_date: Date;
 }

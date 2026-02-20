@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Calendar, Pencil } from "lucide-react";
+import { Plus, Trash2, Calendar, Pencil, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,11 @@ export default function ExceptionsSettings() {
     type: 'holiday',
     name: '',
     capacity_override: '',
-    notes: ''
+    notes: '',
+    has_special_shift: false,
+    special_shift_start_time: '',
+    special_shift_end_time: '',
+    special_shift_slot_interval: '15'
   });
 
   const { data: restaurants } = useQuery({
@@ -47,7 +51,10 @@ export default function ExceptionsSettings() {
     mutationFn: (data) => base44.entities.Exception.create({
       ...data,
       restaurant_id: restaurant.id,
-      capacity_override: data.capacity_override ? parseInt(data.capacity_override) : null
+      capacity_override: data.capacity_override ? parseInt(data.capacity_override) : null,
+      special_shift_slot_interval: data.has_special_shift && data.special_shift_slot_interval
+        ? parseInt(data.special_shift_slot_interval)
+        : null
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exceptions'] });
@@ -57,7 +64,11 @@ export default function ExceptionsSettings() {
         type: 'holiday',
         name: '',
         capacity_override: '',
-        notes: ''
+        notes: '',
+        has_special_shift: false,
+        special_shift_start_time: '',
+        special_shift_end_time: '',
+        special_shift_slot_interval: '15'
       });
       setEditingException(null);
     },
@@ -66,7 +77,10 @@ export default function ExceptionsSettings() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Exception.update(id, {
       ...data,
-      capacity_override: data.capacity_override ? parseInt(data.capacity_override) : null
+      capacity_override: data.capacity_override ? parseInt(data.capacity_override) : null,
+      special_shift_slot_interval: data.has_special_shift && data.special_shift_slot_interval
+        ? parseInt(data.special_shift_slot_interval)
+        : null
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exceptions'] });
@@ -76,7 +90,11 @@ export default function ExceptionsSettings() {
         type: 'holiday',
         name: '',
         capacity_override: '',
-        notes: ''
+        notes: '',
+        has_special_shift: false,
+        special_shift_start_time: '',
+        special_shift_end_time: '',
+        special_shift_slot_interval: '15'
       });
       setEditingException(null);
     },
@@ -96,7 +114,11 @@ export default function ExceptionsSettings() {
       type: exception.type,
       name: exception.name,
       capacity_override: exception.capacity_override?.toString() || '',
-      notes: exception.notes || ''
+      notes: exception.notes || '',
+      has_special_shift: exception.has_special_shift || false,
+      special_shift_start_time: exception.special_shift_start_time || '',
+      special_shift_end_time: exception.special_shift_end_time || '',
+      special_shift_slot_interval: exception.special_shift_slot_interval?.toString() || '15'
     });
     setIsDialogOpen(true);
   };
@@ -154,7 +176,11 @@ export default function ExceptionsSettings() {
                 type: 'holiday',
                 name: '',
                 capacity_override: '',
-                notes: ''
+                notes: '',
+                has_special_shift: false,
+                special_shift_start_time: '',
+                special_shift_end_time: '',
+                special_shift_slot_interval: '15'
               });
             }
           }}>
@@ -230,6 +256,62 @@ export default function ExceptionsSettings() {
                       placeholder="Detalhes sobre a exceção"
                     />
                   </div>
+                </div>
+
+                {/* Special Shift Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <input
+                      type="checkbox"
+                      id="has_special_shift"
+                      checked={formData.has_special_shift}
+                      onChange={(e) => setFormData({...formData, has_special_shift: e.target.checked})}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <Label htmlFor="has_special_shift" className="cursor-pointer flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#A56A38]" />
+                      Turno Especial com Horários Especiais
+                    </Label>
+                  </div>
+
+                  {formData.has_special_shift && (
+                    <div className="grid grid-cols-3 gap-4 pl-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="special_shift_start_time">Horário Início *</Label>
+                        <Input
+                          id="special_shift_start_time"
+                          type="time"
+                          value={formData.special_shift_start_time}
+                          onChange={(e) => setFormData({...formData, special_shift_start_time: e.target.value})}
+                          required={formData.has_special_shift}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="special_shift_end_time">Horário Fim *</Label>
+                        <Input
+                          id="special_shift_end_time"
+                          type="time"
+                          value={formData.special_shift_end_time}
+                          onChange={(e) => setFormData({...formData, special_shift_end_time: e.target.value})}
+                          required={formData.has_special_shift}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="special_shift_slot_interval">Intervalo (min)</Label>
+                        <Input
+                          id="special_shift_slot_interval"
+                          type="number"
+                          min="5"
+                          step="5"
+                          value={formData.special_shift_slot_interval}
+                          onChange={(e) => setFormData({...formData, special_shift_slot_interval: e.target.value})}
+                          placeholder="15"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3">

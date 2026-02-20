@@ -24,15 +24,7 @@ export default function RestaurantSettings() {
     owner_email: '',
     public: true
   });
-  const [operatingHours, setOperatingHours] = useState({
-    0: { open: false, shifts: [] }, // Domingo
-    1: { open: false, shifts: [] }, // Segunda
-    2: { open: false, shifts: [] }, // Terça
-    3: { open: false, shifts: [] }, // Quarta
-    4: { open: false, shifts: [] }, // Quinta
-    5: { open: false, shifts: [] }, // Sexta
-    6: { open: false, shifts: [] }  // Sábado
-  });
+
   const [message, setMessage] = useState(null);
 
   const { data: restaurants } = useQuery({
@@ -78,25 +70,6 @@ export default function RestaurantSettings() {
     };
     
     loadData();
-    
-    if (restaurant) {
-
-      // Carregar horários de funcionamento dos turnos
-      if (shifts.length > 0) {
-        const newOperatingHours = { ...operatingHours };
-        shifts.forEach(shift => {
-          if (shift.days_of_week && Array.isArray(shift.days_of_week)) {
-            shift.days_of_week.forEach(day => {
-              if (!newOperatingHours[day].shifts.includes(shift.id)) {
-                newOperatingHours[day].open = true;
-                newOperatingHours[day].shifts.push(shift.id);
-              }
-            });
-          }
-        });
-        setOperatingHours(newOperatingHours);
-      }
-    }
   }, [restaurant, shifts, restaurants]);
 
   const updateMutation = useMutation({
@@ -119,17 +92,6 @@ export default function RestaurantSettings() {
       }
     },
     onSuccess: async () => {
-      // Atualizar days_of_week dos turnos
-      for (const shift of shifts) {
-        const daysWithThisShift = Object.entries(operatingHours)
-          .filter(([_, data]) => data.shifts.includes(shift.id))
-          .map(([day, _]) => parseInt(day));
-
-        await shiftService.update(shift.id, {
-          days_of_week: daysWithThisShift
-        });
-      }
-
       queryClient.invalidateQueries({ queryKey: ['restaurants'] });
       queryClient.invalidateQueries({ queryKey: ['all-shifts'] });
       setMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
@@ -146,33 +108,7 @@ export default function RestaurantSettings() {
     updateMutation.mutate(formData);
   };
 
-  const toggleDay = (day) => {
-    setOperatingHours({
-      ...operatingHours,
-      [day]: {
-        ...operatingHours[day],
-        open: !operatingHours[day].open,
-        shifts: !operatingHours[day].open ? operatingHours[day].shifts : []
-      }
-    });
-  };
 
-  const toggleShift = (day, shiftId) => {
-    const currentShifts = operatingHours[day].shifts;
-    const newShifts = currentShifts.includes(shiftId)
-      ? currentShifts.filter(id => id !== shiftId)
-      : [...currentShifts, shiftId];
-
-    setOperatingHours({
-      ...operatingHours,
-      [day]: {
-        ...operatingHours[day],
-        shifts: newShifts
-      }
-    });
-  };
-
-  const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
   return (
     <div className="space-y-6">
@@ -287,56 +223,7 @@ export default function RestaurantSettings() {
               </div>
             </div>
 
-            {/* Horários de Funcionamento */}
-            <div className="space-y-4 pt-6 border-t">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#A56A38]" />
-                Horários de Funcionamento
-              </h3>
-              <p className="text-sm text-gray-500">Configure quais dias e turnos seu restaurante funciona</p>
 
-              <div className="space-y-3">
-                {dayNames.map((dayName, dayIndex) => (
-                  <div key={dayIndex} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3 w-32">
-                      <Checkbox
-                        checked={operatingHours[dayIndex].open}
-                        onCheckedChange={() => toggleDay(dayIndex)}
-                        id={`day-${dayIndex}`}
-                      />
-                      <Label htmlFor={`day-${dayIndex}`} className="font-semibold cursor-pointer">
-                        {dayName}
-                      </Label>
-                    </div>
-
-                    {operatingHours[dayIndex].open && (
-                      <div className="flex flex-wrap gap-2 flex-1">
-                        {shifts.map((shift) => (
-                          <div key={shift.id} className="flex items-center gap-2">
-                            <Checkbox
-                              checked={operatingHours[dayIndex].shifts.includes(shift.id)}
-                              onCheckedChange={() => toggleShift(dayIndex, shift.id)}
-                              id={`day-${dayIndex}-shift-${shift.id}`}
-                            />
-                            <Label 
-                              htmlFor={`day-${dayIndex}-shift-${shift.id}`} 
-                              className="text-sm cursor-pointer"
-                            >
-                              {shift.name} ({shift.start_time} - {shift.end_time})
-                            </Label>
-                          </div>
-                        ))}
-                        {shifts.length === 0 && (
-                          <p className="text-xs text-gray-500">
-                            Cadastre turnos primeiro na aba "Turnos"
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <div className="flex justify-end pt-6 border-t">
               <Button 

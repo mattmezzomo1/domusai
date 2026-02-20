@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import { restaurantService } from "@/services/api.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Save, Clock, Users, AlertCircle, CheckCircle } from "lucide-react";
+import { Save, Clock, Users, AlertCircle, CheckCircle, MessageCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AdvancedSettings() {
   const queryClient = useQueryClient();
@@ -20,13 +21,14 @@ export default function AdvancedSettings() {
     late_tolerance_minutes: '',
     enable_waitlist: true,
     enable_table_joining: true,
-    enable_modifications: true // NOVO
+    enable_modifications: true, // NOVO
+    whatsapp_message_template: 'Olá {nome}! Tudo bem?'
   });
   const [message, setMessage] = useState(null);
 
   const { data: restaurants } = useQuery({
     queryKey: ['restaurants'],
-    queryFn: () => base44.entities.Restaurant.list(),
+    queryFn: () => restaurantService.list(),
     initialData: [],
   });
 
@@ -43,7 +45,8 @@ export default function AdvancedSettings() {
         late_tolerance_minutes: restaurant.late_tolerance_minutes?.toString() || '15',
         enable_waitlist: restaurant.enable_waitlist ?? true,
         enable_table_joining: restaurant.enable_table_joining ?? true,
-        enable_modifications: restaurant.enable_modifications ?? true // NOVO
+        enable_modifications: restaurant.enable_modifications ?? true, // NOVO
+        whatsapp_message_template: restaurant.whatsapp_message_template || 'Olá {nome}! Tudo bem?'
       });
     }
   }, [restaurant]);
@@ -51,7 +54,9 @@ export default function AdvancedSettings() {
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       if (restaurant) {
-        return await base44.entities.Restaurant.update(restaurant.id, {
+        console.log('🔍 Salvando configurações:', data);
+        console.log('🔍 whatsapp_message_template:', data.whatsapp_message_template);
+        const result = await restaurantService.update(restaurant.id, {
           max_party_size: parseInt(data.max_party_size),
           max_online_party_size: parseInt(data.max_online_party_size),
           booking_cutoff_hours: parseFloat(data.booking_cutoff_hours),
@@ -60,16 +65,21 @@ export default function AdvancedSettings() {
           late_tolerance_minutes: parseInt(data.late_tolerance_minutes),
           enable_waitlist: data.enable_waitlist,
           enable_table_joining: data.enable_table_joining,
-          enable_modifications: data.enable_modifications
+          enable_modifications: data.enable_modifications,
+          whatsapp_message_template: data.whatsapp_message_template
         });
+        console.log('✅ Resultado do update:', result);
+        return result;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ onSuccess chamado:', data);
       queryClient.invalidateQueries({ queryKey: ['restaurants'] });
       setMessage({ type: 'success', text: 'Configurações avançadas salvas com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     },
     onError: (error) => {
+      console.error('❌ onError chamado:', error);
       setMessage({ type: 'error', text: `Erro ao salvar: ${error.message}` });
       setTimeout(() => setMessage(null), 5000);
     }
@@ -285,6 +295,29 @@ export default function AdvancedSettings() {
                     onCheckedChange={(checked) => setFormData({...formData, enable_table_joining: checked})}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* WhatsApp Message Template */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-[#A56A38]" />
+                Mensagem do WhatsApp (CRM)
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp_message_template">Mensagem Padrão</Label>
+                <Textarea
+                  id="whatsapp_message_template"
+                  value={formData.whatsapp_message_template}
+                  onChange={(e) => setFormData({...formData, whatsapp_message_template: e.target.value})}
+                  placeholder="Olá {nome}! Tudo bem?"
+                  rows={3}
+                  className="resize-none"
+                />
+                <p className="text-xs text-gray-500">
+                  Use <code className="bg-gray-100 px-1 py-0.5 rounded">{'{nome}'}</code> para inserir o nome do cliente automaticamente.
+                  Esta mensagem será usada ao clicar no botão WhatsApp no CRM.
+                </p>
               </div>
             </div>
 

@@ -48,6 +48,14 @@ export default function Reservations() {
     initialData: [],
   });
 
+  const restaurant = restaurants[0];
+
+  // Helper function to format WhatsApp message
+  const formatWhatsAppMessage = (customerName) => {
+    const template = restaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
+    return template.replace(/{nome}/g, customerName);
+  };
+
   useEffect(() => {
     if (restaurants.length > 0 && !selectedRestaurant) {
       setSelectedRestaurant(restaurants[0]);
@@ -768,7 +776,7 @@ export default function Reservations() {
                               <div className="flex items-center gap-2 shrink-0">
                                 <WhatsAppButton
                                   phone={customer?.phone_whatsapp}
-                                  message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
+                                  message={formatWhatsAppMessage(customer?.full_name)}
                                 />
                                 <EditReservationDialog reservation={reservation} />
                               </div>
@@ -850,7 +858,7 @@ export default function Reservations() {
                               <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                                 <WhatsAppButton
                                   phone={customer?.phone_whatsapp}
-                                  message={`Olá ${customer?.full_name}! Sobre sua reserva ${reservation.reservation_code}.`}
+                                  message={formatWhatsAppMessage(customer?.full_name)}
                                 />
                                 <EditReservationDialog reservation={reservation} />
                               </div>

@@ -2,6 +2,13 @@ import React, { useState } from "react";
 import { Calendar, Users, Clock, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function BookingStep1({ onComplete, formData, setFormData, restaurant, shifts, environments }) {
   const [selectedDate, setSelectedDate] = useState(formData.date || "");
@@ -96,31 +103,29 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
             <MapPin className="w-4 h-4 text-[#C47B3C]" />
             Preferência de Ambiente
           </Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {environments.map((env) => {
-              const isSelected = selectedEnvironment === env.id;
-              return (
-                <button
+          <Select value={selectedEnvironment} onValueChange={setSelectedEnvironment}>
+            <SelectTrigger className="w-full p-4 bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white focus:border-[#C47B3C] focus:ring-[#C47B3C] transition-all h-auto">
+              <SelectValue placeholder="Selecione um ambiente" className="text-white" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+              {environments.map((env) => (
+                <SelectItem
                   key={env.id}
-                  onClick={() => setSelectedEnvironment(env.id)}
-                  className={`p-4 rounded-lg border transition-all text-left ${
-                    isSelected
-                      ? 'bg-gradient-to-br from-[#C47B3C] to-[#A56A38] border-[#C47B3C] shadow-lg'
-                      : 'bg-[rgba(255,255,255,0.05)] border-white/10 hover:border-[#C47B3C]/50'
-                  }`}
+                  value={env.id}
+                  className="focus:bg-[#C47B3C]/20 focus:text-white cursor-pointer"
                 >
-                  <div className={`font-semibold mb-1 ${isSelected ? 'text-white' : 'text-white'}`}>
-                    {env.name}
+                  <div className="flex flex-col py-1">
+                    <span className="font-semibold">{env.name}</span>
+                    {env.capacity && (
+                      <span className="text-xs text-[#AAAAAA]">
+                        Capacidade: {env.capacity} pessoas
+                      </span>
+                    )}
                   </div>
-                  {env.capacity && (
-                    <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-[#AAAAAA]'}`}>
-                      Capacidade: {env.capacity} pessoas
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
