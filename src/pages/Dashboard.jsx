@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { restaurantService, reservationService } from "@/services/api.service";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ChevronLeft, ChevronRight, ExternalLink, Plus } from "lucide-react";
+import { createPageUrl } from "@/utils";
 import { format, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +20,7 @@ import TableMapView from "../components/reservations/TableMapView";
 import { base44 } from "@/api/base44Client";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [viewMode, setViewMode] = useState("map"); // "list" or "map"
@@ -110,7 +113,7 @@ export default function Dashboard() {
           <Calendar className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl md:text-2xl font-bold mb-2">Nenhum restaurante cadastrado</h2>
           <p className="text-sm md:text-base text-gray-500 mb-6">Configure seu restaurante para começar a receber reservas</p>
-          <Button>Configurar Restaurante</Button>
+          <Button onClick={() => navigate(createPageUrl("Settings"))}>Configurar Restaurante</Button>
         </Card>
       </div>
     );
