@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
 import { asyncHandler } from '../../middleware/error.middleware';
-import { LoginDTO, UpdateUserDTO, ResetPasswordDTO } from '../../types';
+import { LoginDTO, CreateUserDTO, UpdateUserDTO, ResetPasswordDTO } from '../../types';
 
 export class AuthController {
+  register = asyncHandler(async (req: Request, res: Response) => {
+    const data: CreateUserDTO = req.body;
+    const result = await authService.register(data);
+    res.status(201).json(result);
+  });
+
   login = asyncHandler(async (req: Request, res: Response) => {
     const data: LoginDTO = req.body;
     const result = await authService.login(data);

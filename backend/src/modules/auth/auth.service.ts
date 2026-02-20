@@ -5,12 +5,52 @@ import { AppError } from '../../middleware/error.middleware';
 import {
   LoginDTO,
   LoginResponseDTO,
+  CreateUserDTO,
   UpdateUserDTO,
   UserResponseDTO,
   ResetPasswordDTO,
 } from '../../types';
 
 export class AuthService {
+  async register(data: CreateUserDTO): Promise<LoginResponseDTO> {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingUser) {
+      throw new AppError('Email already registered', 400);
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(data.password);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        full_name: data.full_name,
+        role: data.role || 'USER',
+        avatar_url: data.avatar_url,
+      },
+    });
+
+    // Generate token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const { password, ...userWithoutPassword } = user;
+
+    return {
+      user: userWithoutPassword as UserResponseDTO,
+      token,
+    };
+  }
+
   async login(data: LoginDTO): Promise<LoginResponseDTO> {
     const user = await prisma.user.findUnique({
       where: { email: data.email },

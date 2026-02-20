@@ -20,10 +20,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Parse CORS_ORIGIN - can be comma-separated list
+const corsOrigin = process.env.CORS_ORIGIN || '*';
+const corsOrigins = corsOrigin.split(',').map(origin => origin.trim());
+
+console.log('🔐 CORS Configuration:');
+console.log('   Allowed origins:', corsOrigins);
+
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // For Stripe webhooks, we need raw body

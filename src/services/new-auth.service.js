@@ -9,17 +9,40 @@ import { apiClient } from '@/api/apiClient';
  */
 export const newAuthService = {
   /**
+   * Registra um novo usuário
+   */
+  register: async (email, password, fullName) => {
+    try {
+      const response = await apiClient.post('/auth/register', {
+        email,
+        password,
+        full_name: fullName
+      });
+
+      // Salva o token
+      if (response.token) {
+        apiClient.setToken(response.token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Faz login com email e senha
    */
   login: async (email, password) => {
     try {
       const response = await apiClient.post('/auth/login', { email, password });
-      
+
       // Salva o token
       if (response.token) {
         apiClient.setToken(response.token);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Login error:', error);

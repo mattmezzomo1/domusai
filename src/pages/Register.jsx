@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,30 +7,47 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export default function Login() {
+export default function Register() {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const returnUrl = searchParams.get('returnUrl') || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validações
+    if (!fullName.trim()) {
+      setError('Por favor, informe seu nome completo.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await authService.login(email, password);
+      const response = await authService.register(email, password, fullName);
       
       if (response.token) {
-        // Login bem-sucedido, redireciona
-        window.location.href = returnUrl;
+        // Cadastro bem-sucedido, redireciona para a página inicial
+        window.location.href = '/';
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
+      console.error('Register error:', err);
+      setError(err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -41,10 +58,10 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Domus AI
+            Criar Conta
           </CardTitle>
           <CardDescription className="text-center">
-            Entre com suas credenciais para acessar o sistema
+            Preencha os dados abaixo para criar sua conta no Domus AI
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -54,6 +71,19 @@ export default function Login() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Nome Completo</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Seu nome completo"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -78,6 +108,22 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                minLength={6}
+              />
+              <p className="text-xs text-gray-500">Mínimo de 6 caracteres</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                minLength={6}
               />
             </div>
 
@@ -86,23 +132,16 @@ export default function Login() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Criando conta...' : 'Criar Conta'}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>
-              Não tem uma conta?{' '}
-              <Link to="/register" className="text-blue-600 hover:underline font-medium">
-                Cadastre-se
+              Já tem uma conta?{' '}
+              <Link to="/login" className="text-blue-600 hover:underline font-medium">
+                Faça login
               </Link>
-            </p>
-          </div>
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Credenciais de teste:</p>
-            <p className="font-mono text-xs mt-1">
-              admin@domusai.com / admin123
             </p>
           </div>
         </CardContent>

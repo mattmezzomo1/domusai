@@ -57,6 +57,7 @@ import Customers from './pages/Customers';
 import Dashboard from './pages/Dashboard';
 import Insights from './pages/Insights';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 import PublicBooking from './pages/PublicBooking';
@@ -77,6 +78,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Insights": Insights,
     "Login": Login,
+    "Register": Register,
     "Plans": Plans,
     "Profile": Profile,
     "PublicBooking": PublicBooking,

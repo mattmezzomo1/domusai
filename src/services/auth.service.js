@@ -51,6 +51,15 @@ export const authService = {
   },
 
   /**
+   * Registra um novo usuário
+   */
+  register: async (email, password, fullName) => {
+    if (USE_MOCK) return mockAuthService.register(email, password, fullName);
+    if (USE_NEW_API) return newAuthService.register(email, password, fullName);
+    throw new Error('Registro direto não disponível com Base44');
+  },
+
+  /**
    * Faz login
    */
   login: async (email, password) => {
