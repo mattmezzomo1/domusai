@@ -96,7 +96,7 @@ export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   
   // Lista de páginas que NÃO precisam de autenticação
-  const publicPages = ["BookingPublic", "PublicBooking", "Login", "Plans"];
+  const publicPages = ["BookingPublic", "PublicBooking", "Login", "Register", "Plans"];
   
   // Verificar se é página pública ANTES de tudo - verificações mais robustas
   const isPublicPage = publicPages.includes(currentPageName) || 
