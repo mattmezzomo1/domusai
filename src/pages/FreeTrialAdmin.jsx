@@ -65,10 +65,10 @@ export default function FreeTrialAdmin() {
       <Card className="max-w-md w-full shadow-2xl">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/e8bb9b709_LOGOS16.png" 
-              alt="Logo" 
-              className="w-16 h-16 rounded-xl object-cover shadow-lg"
+            <img
+              src="/logo.png"
+              alt="Logo Domus"
+              className="h-16 w-auto object-contain"
             />
           </div>
           <CardTitle className="text-3xl font-bold text-gray-900">Free Trial - Domus</CardTitle>

@@ -303,15 +303,10 @@ export default function Layout({ children, currentPageName }) {
           <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3 sticky top-0 z-10 md:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/e8bb9b709_LOGOS16.png" 
-                  alt="Logo" 
-                  className="w-8 h-8 rounded-lg object-cover shadow-md"
-                />
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/df3f23b2d_FULLBLACKSEMREGISTROpdf7.png" 
-                  alt="DOMUS" 
-                  className="h-5 w-auto"
+                <img
+                  src="/logo.png"
+                  alt="Logo Domus"
+                  className="h-8 w-auto object-contain"
                 />
               </div>
               <Button
