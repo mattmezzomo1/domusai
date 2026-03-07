@@ -30,6 +30,14 @@ export class TablesController {
     const result = await tablesService.delete(id, req.user!.email);
     res.json(result);
   });
+
+  // Public endpoint to find tables by restaurant
+  findByRestaurant = asyncHandler(async (req: Request, res: Response) => {
+    const restaurantId = req.params.restaurantId as string;
+    const filters = req.query;
+    const tables = await tablesService.findByRestaurant(restaurantId, filters);
+    res.json(tables);
+  });
 }
 
 export default new TablesController();

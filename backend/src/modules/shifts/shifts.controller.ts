@@ -30,6 +30,13 @@ export class ShiftsController {
     const result = await shiftsService.delete(id, req.user!.email);
     res.json(result);
   });
+
+  // Public endpoint to get shifts by restaurant
+  findByRestaurant = asyncHandler(async (req: Request, res: Response) => {
+    const restaurantId = req.params.restaurantId as string;
+    const shifts = await shiftsService.findByRestaurant(restaurantId, req.query);
+    res.json(shifts);
+  });
 }
 
 export default new ShiftsController();

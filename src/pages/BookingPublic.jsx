@@ -69,10 +69,8 @@ export default function BookingPublic() {
     queryFn: async () => {
       if (!restaurant) return [];
       try {
-        const result = await shiftService.filter({
-          restaurant_id: restaurant.id,
-          active: true
-        });
+        // Use public endpoint that doesn't require authentication
+        const result = await shiftService.getByRestaurant(restaurant.id, { active: true });
         console.log('✅ Turnos encontrados:', result);
         return result;
       } catch (error) {
@@ -90,10 +88,8 @@ export default function BookingPublic() {
     queryFn: async () => {
       if (!restaurant) return [];
       try {
-        const result = await environmentService.filter({
-          restaurant_id: restaurant.id,
-          is_active: true
-        });
+        // Use public endpoint that doesn't require authentication
+        const result = await environmentService.getByRestaurant(restaurant.id, { is_active: true });
         console.log('✅ Ambientes encontrados:', result);
         return result;
       } catch (error) {

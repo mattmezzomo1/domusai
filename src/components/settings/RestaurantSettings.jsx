@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Save, Home, CheckCircle } from "lucide-react";
+import { Save, Home, CheckCircle, AlertCircle, Check, X, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -26,6 +26,11 @@ export default function RestaurantSettings() {
   });
 
   const [message, setMessage] = useState(null);
+  const [slugValidation, setSlugValidation] = useState({
+    checking: false,
+    available: null,
+    isOwn: false
+  });
 
   const { data: restaurants } = useQuery({
     queryKey: ['restaurants'],
@@ -105,8 +110,53 @@ export default function RestaurantSettings() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Verificar se o slug está disponível antes de salvar
+    if (slugValidation.available === false && !slugValidation.isOwn) {
+      setMessage({ type: 'error', text: 'Este slug já está em uso. Por favor, escolha outro.' });
+      setTimeout(() => setMessage(null), 5000);
+      return;
+    }
+
     updateMutation.mutate(formData);
   };
+
+  // Validação de slug em tempo real
+  useEffect(() => {
+    const checkSlug = async () => {
+      const slug = formData.slug.trim();
+
+      // Não validar se o slug estiver vazio
+      if (!slug) {
+        setSlugValidation({ checking: false, available: null, isOwn: false });
+        return;
+      }
+
+      // Não validar se for o slug atual do restaurante
+      if (restaurant && slug === restaurant.slug) {
+        setSlugValidation({ checking: false, available: true, isOwn: true });
+        return;
+      }
+
+      setSlugValidation({ checking: true, available: null, isOwn: false });
+
+      try {
+        const result = await restaurantService.checkSlugAvailability(slug, restaurant?.id);
+        setSlugValidation({
+          checking: false,
+          available: result.available,
+          isOwn: result.isOwn
+        });
+      } catch (error) {
+        console.error('Erro ao verificar slug:', error);
+        setSlugValidation({ checking: false, available: null, isOwn: false });
+      }
+    };
+
+    // Debounce: esperar 500ms após o usuário parar de digitar
+    const timeoutId = setTimeout(checkSlug, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.slug, restaurant]);
 
 
 
@@ -144,13 +194,45 @@ export default function RestaurantSettings() {
 
               <div className="space-y-2">
                 <Label htmlFor="slug">URL Amigável (slug) *</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})}
-                  placeholder="Ex: sabor-arte"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})}
+                    placeholder="Ex: sabor-arte"
+                    required
+                    className={`pr-10 ${
+                      slugValidation.available === false && !slugValidation.isOwn
+                        ? 'border-red-500 focus:ring-red-500'
+                        : slugValidation.available === true
+                        ? 'border-green-500 focus:ring-green-500'
+                        : ''
+                    }`}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {slugValidation.checking && (
+                      <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    )}
+                    {!slugValidation.checking && slugValidation.available === true && (
+                      <Check className="w-4 h-4 text-green-500" />
+                    )}
+                    {!slugValidation.checking && slugValidation.available === false && !slugValidation.isOwn && (
+                      <X className="w-4 h-4 text-red-500" />
+                    )}
+                  </div>
+                </div>
+                {slugValidation.available === false && !slugValidation.isOwn && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Este slug já está em uso. Por favor, escolha outro.
+                  </p>
+                )}
+                {slugValidation.available === true && !slugValidation.isOwn && formData.slug && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    Slug disponível!
+                  </p>
+                )}
                 <p className="text-xs text-gray-500">Será usado na URL pública de reservas</p>
               </div>
 

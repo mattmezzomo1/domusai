@@ -40,7 +40,26 @@ export const newRestaurantService = {
   getBySlug: async (slug) => {
     return apiClient.get(`/restaurants/slug/${slug}`);
   },
-  
+
+  checkSlugAvailability: async (slug, currentRestaurantId = null) => {
+    try {
+      const restaurant = await apiClient.get(`/restaurants/slug/${slug}`);
+      // Se encontrou um restaurante com esse slug
+      if (restaurant && currentRestaurantId && restaurant.id === currentRestaurantId) {
+        // É o próprio restaurante, slug disponível
+        return { available: true, isOwn: true };
+      }
+      // Slug já está em uso por outro restaurante
+      return { available: false, isOwn: false };
+    } catch (error) {
+      // Se retornou 404, o slug está disponível
+      if (error.response?.status === 404) {
+        return { available: true, isOwn: false };
+      }
+      throw error;
+    }
+  },
+
   create: async (data) => {
     return apiClient.post('/restaurants', data);
   },
@@ -62,28 +81,39 @@ export const newReservationService = {
     const queryString = buildQueryString(filters);
     return apiClient.get(`/reservations${queryString}`);
   },
-  
+
   filter: async (filters = {}, sort = {}) => {
     const allFilters = { ...filters, ...sort };
     return newReservationService.list(allFilters);
   },
-  
+
   getById: async (id) => {
     return apiClient.get(`/reservations/${id}`);
   },
-  
+
   getByCode: async (code) => {
     return apiClient.get(`/reservations/code/${code}`);
   },
-  
+
+  // Public endpoint to get reservations by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get(`/reservations/public/restaurant/${restaurantId}${queryString}`);
+  },
+
+  // Public endpoint to create reservation (no auth required, for public booking)
+  createPublic: async (data) => {
+    return apiClient.post('/reservations/public', data);
+  },
+
   create: async (data) => {
     return apiClient.post('/reservations', data);
   },
-  
+
   update: async (id, data) => {
     return apiClient.put(`/reservations/${id}`, data);
   },
-  
+
   delete: async (id) => {
     return apiClient.delete(`/reservations/${id}`);
   }
@@ -97,24 +127,39 @@ export const newCustomerService = {
     const queryString = buildQueryString(filters);
     return apiClient.get(`/customers${queryString}`);
   },
-  
+
   filter: async (filters = {}, sort = {}) => {
     const allFilters = { ...filters, ...sort };
     return newCustomerService.list(allFilters);
   },
-  
+
   getById: async (id) => {
     return apiClient.get(`/customers/${id}`);
   },
-  
+
+  // Public endpoint to find customer by phone and restaurant (no auth required)
+  getByPhoneAndRestaurant: async (phone, restaurantId) => {
+    return apiClient.get(`/customers/public/phone/${phone}/restaurant/${restaurantId}`);
+  },
+
+  // Public endpoint to create customer (no auth required, for public booking)
+  createPublic: async (data) => {
+    return apiClient.post('/customers/public', data);
+  },
+
+  // Public endpoint to update customer (no auth required, for public booking)
+  updatePublic: async (id, data) => {
+    return apiClient.put(`/customers/public/${id}`, data);
+  },
+
   create: async (data) => {
     return apiClient.post('/customers', data);
   },
-  
+
   update: async (id, data) => {
     return apiClient.put(`/customers/${id}`, data);
   },
-  
+
   delete: async (id) => {
     return apiClient.delete(`/customers/${id}`);
   }
@@ -128,24 +173,30 @@ export const newTableService = {
     const queryString = buildQueryString(filters);
     return apiClient.get(`/tables${queryString}`);
   },
-  
+
   filter: async (filters = {}, sort = {}) => {
     const allFilters = { ...filters, ...sort };
     return newTableService.list(allFilters);
   },
-  
+
   getById: async (id) => {
     return apiClient.get(`/tables/${id}`);
   },
-  
+
+  // Public endpoint to get tables by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get(`/tables/public/restaurant/${restaurantId}${queryString}`);
+  },
+
   create: async (data) => {
     return apiClient.post('/tables', data);
   },
-  
+
   update: async (id, data) => {
     return apiClient.put(`/tables/${id}`, data);
   },
-  
+
   delete: async (id) => {
     return apiClient.delete(`/tables/${id}`);
   }
@@ -167,6 +218,12 @@ export const newShiftService = {
 
   getById: async (id) => {
     return apiClient.get(`/shifts/${id}`);
+  },
+
+  // Public endpoint to get shifts by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get(`/shifts/public/restaurant/${restaurantId}${queryString}`);
   },
 
   create: async (data) => {
@@ -233,6 +290,12 @@ export const newEnvironmentService = {
 
   getById: async (id) => {
     return apiClient.get(`/environments/${id}`);
+  },
+
+  // Public endpoint to get environments by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get(`/environments/public/restaurant/${restaurantId}${queryString}`);
   },
 
   create: async (data) => {

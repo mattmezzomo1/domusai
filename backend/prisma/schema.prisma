@@ -42,34 +42,34 @@ model Subscription {
 }
 
 model Restaurant {
-  id                         String        @id @default(uuid())
-  owner_email                String
-  name                       String
-  slug                       String        @unique
-  phone                      String
-  address                    String
-  total_capacity             Int
-  timezone                   String        @default("America/Sao_Paulo")
-  public                     Boolean       @default(true)
-  operating_hours            String?       @db.LongText
-  whatsapp_message_template  String?       @default("Olá {nome}! Tudo bem?") @db.Text
-  max_party_size             Int?          @default(12)
-  max_online_party_size      Int?          @default(8)
-  booking_cutoff_hours       Float?        @default(2)
-  cancellation_cutoff_hours  Float?        @default(2)
-  modification_cutoff_hours  Float?        @default(2)
-  late_tolerance_minutes     Int?          @default(15)
-  enable_waitlist            Boolean       @default(true)
-  enable_table_joining       Boolean       @default(true)
-  enable_modifications       Boolean       @default(true)
-  created_date               DateTime      @default(now())
-  updated_date               DateTime      @updatedAt
-  customers                  Customer[]
-  environments               Environment[]
-  reservations               Reservation[]
-  owner                      User          @relation(fields: [owner_email], references: [email], onDelete: Cascade)
-  shifts                     Shift[]
-  tables                     Table[]
+  id                        String        @id @default(uuid())
+  owner_email               String
+  name                      String
+  slug                      String        @unique
+  phone                     String
+  address                   String
+  total_capacity            Int
+  timezone                  String        @default("America/Sao_Paulo")
+  public                    Boolean       @default(true)
+  operating_hours           String?       @db.LongText
+  created_date              DateTime      @default(now())
+  updated_date              DateTime      @updatedAt
+  whatsapp_message_template String?       @default("Olá {nome}! Tudo bem?") @db.Text
+  max_party_size            Int?          @default(12)
+  max_online_party_size     Int?          @default(8)
+  booking_cutoff_hours      Float?        @default(2)
+  cancellation_cutoff_hours Float?        @default(2)
+  modification_cutoff_hours Float?        @default(2)
+  late_tolerance_minutes    Int?          @default(15)
+  enable_waitlist           Boolean       @default(true)
+  enable_table_joining      Boolean       @default(true)
+  enable_modifications      Boolean       @default(true)
+  customers                 Customer[]
+  environments              Environment[]
+  reservations              Reservation[]
+  owner                     User          @relation(fields: [owner_email], references: [email], onDelete: Cascade)
+  shifts                    Shift[]
+  tables                    Table[]
 
   @@index([owner_email])
   @@index([slug])

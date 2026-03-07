@@ -1,75 +1,10 @@
-import React, { useState } from "react";
-import { CheckCircle, Phone, AlertTriangle, Calendar, Users, Clock, User } from "lucide-react";
+import React from "react";
+import { CheckCircle, Phone, Calendar, Users, Clock, User } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function BookingConfirmation({ reservationCode, restaurant, bookingData, onBackToHome }) {
-  const [confirmPhone, setConfirmPhone] = useState("");
-  const [showWhatsAppButton, setShowWhatsAppButton] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
-
-  // O número original já está limpo (sem formatação)
-  const originalPhone = bookingData.phone_whatsapp;
-
-  const handleConfirmPhone = () => {
-    const cleanConfirmPhone = confirmPhone.replace(/\D/g, '');
-    const cleanOriginalPhone = originalPhone.replace(/\D/g, '');
-    
-    console.log('Original:', cleanOriginalPhone, 'Confirmado:', cleanConfirmPhone);
-    
-    if (cleanConfirmPhone === cleanOriginalPhone) {
-      setShowWhatsAppButton(true);
-      setPhoneError("");
-    } else {
-      setPhoneError("O WhatsApp digitado não corresponde ao WhatsApp informado anteriormente. Verifique e tente novamente.");
-      setShowWhatsAppButton(false);
-    }
-  };
-
-  const handleSendWhatsApp = () => {
-    const whatsappNumber = restaurant.whatsapp_confirmation || restaurant.phone?.replace(/\D/g, '') || '';
-    
-    if (!whatsappNumber) {
-      alert("Restaurante não configurou WhatsApp para confirmação. Entre em contato diretamente.");
-      return;
-    }
-
-    const formattedDate = format(new Date(bookingData.date), "dd/MM/yyyy", { locale: ptBR });
-    
-    const message = encodeURIComponent(
-      `Confirmar minha reserva abaixo:\n\n` +
-      `Código: ${reservationCode}\n` +
-      `Nome: ${bookingData.full_name}\n` +
-      `Data: ${formattedDate}\n` +
-      `Pessoas: ${bookingData.party_size}\n` +
-      `Horário: ${bookingData.slot_time}`
-    );
-
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
-  };
-
-  const handlePhoneChange = (value) => {
-    // Remover tudo que não é número
-    const cleaned = value.replace(/\D/g, '');
-
-    // Limitar a 11 dígitos (DDD + 9 dígitos)
-    const limited = cleaned.substring(0, 11);
-
-    // Formatar telefone automaticamente
-    let formatted = limited;
-
-    if (limited.length >= 2) {
-      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2)}`;
-    }
-    if (limited.length >= 7) {
-      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2, 7)}-${limited.substring(7)}`;
-    }
-
-    setConfirmPhone(formatted);
-    setPhoneError("");
-  };
-
-  // Formatar o número original para exibição
+  // Formatar o número de telefone para exibição
   const formatPhoneDisplay = (phone) => {
     if (!phone) return '';
     const cleaned = phone.replace(/\D/g, '');
@@ -110,19 +45,11 @@ export default function BookingConfirmation({ reservationCode, restaurant, booki
             </p>
           </div>
 
-          {/* Important Warning */}
-          <div className="bg-[rgba(255,200,0,0.1)] border-2 border-yellow-500/50 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-yellow-500 font-bold text-sm mb-1">
-                  IMPORTANTE: VERIFIQUE OS DADOS DA SUA RESERVA COM CUIDADO
-                </p>
-                <p className="text-[#AAAAAA] text-xs">
-                  Confirme todas as informações antes de enviar a confirmação no WhatsApp
-                </p>
-              </div>
-            </div>
+          {/* Important Info */}
+          <div className="bg-[rgba(196,123,60,0.1)] border border-[#C47B3C]/30 rounded-lg p-4">
+            <p className="text-[#C47B3C] font-semibold text-sm text-center">
+              Guarde este código para consultar ou modificar sua reserva
+            </p>
           </div>
 
           {/* Reservation Info */}
@@ -168,64 +95,6 @@ export default function BookingConfirmation({ reservationCode, restaurant, booki
                 <p className="text-white font-medium">{bookingData.party_size} pessoas</p>
               </div>
             </div>
-          </div>
-
-          {/* WhatsApp Confirmation */}
-          <div className="space-y-4 border-t border-white/10 pt-6">
-            <h3 className="text-white font-semibold text-lg">
-              Enviar Confirmação
-            </h3>
-            
-            {!showWhatsAppButton ? (
-              <div className="space-y-3">
-                <label className="text-white text-sm font-medium flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-[#C47B3C]" />
-                  Confirme seu WhatsApp
-                </label>
-                <input
-                  type="tel"
-                  value={confirmPhone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  className="w-full p-4 bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
-                />
-                
-                {phoneError && (
-                  <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-                    <p className="text-red-500 text-sm">{phoneError}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleConfirmPhone}
-                  className="premium-button w-full"
-                >
-                  Verificar WhatsApp
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-3 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <p className="text-green-500 text-sm font-medium">
-                    WhatsApp confirmado! Agora envie a confirmação.
-                  </p>
-                </div>
-                
-                <button
-                  onClick={handleSendWhatsApp}
-                  className="premium-button w-full flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-5 h-5" />
-                  Enviar Confirmação no WhatsApp
-                </button>
-              </div>
-            )}
-
-            <p className="text-xs text-[#888888] text-center">
-              Ao clicar, você será redirecionado para o WhatsApp do restaurante com sua confirmação pré-preenchida
-            </p>
           </div>
 
           <button

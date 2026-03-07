@@ -79,6 +79,25 @@ export class EnvironmentsService {
     await prisma.environment.delete({ where: { id } });
     return { message: 'Environment deleted successfully' };
   }
+
+  // Public method to get environments by restaurant (no auth required)
+  async findByRestaurant(restaurantId: string, filters?: FilterParams): Promise<EnvironmentResponseDTO[]> {
+    const where: any = { restaurant_id: restaurantId };
+
+    if (filters?.is_active !== undefined) {
+      where.is_active = filters.is_active === 'true' || filters.is_active === true;
+    } else {
+      // By default, only return active environments for public access
+      where.is_active = true;
+    }
+
+    const environments = await prisma.environment.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
+
+    return environments as EnvironmentResponseDTO[];
+  }
 }
 
 export default new EnvironmentsService();

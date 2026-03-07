@@ -67,10 +67,8 @@ export default function PublicBooking() {
     queryKey: ['public-shifts', restaurant?.id],
     queryFn: async () => {
       if (!restaurant) return [];
-      return await shiftService.filter({
-        restaurant_id: restaurant.id,
-        is_active: true
-      });
+      // Use public endpoint that doesn't require authentication
+      return await shiftService.getByRestaurant(restaurant.id, { active: true });
     },
     enabled: !!restaurant,
     initialData: [],
@@ -80,10 +78,8 @@ export default function PublicBooking() {
     queryKey: ['public-environments', restaurant?.id],
     queryFn: async () => {
       if (!restaurant) return [];
-      return await environmentService.filter({
-        restaurant_id: restaurant.id,
-        is_active: true
-      });
+      // Use public endpoint that doesn't require authentication
+      return await environmentService.getByRestaurant(restaurant.id, { is_active: true });
     },
     enabled: !!restaurant,
     initialData: [],
@@ -149,52 +145,50 @@ export default function PublicBooking() {
     console.log("Step 3 Complete - Final Data:", finalData);
     
     try {
-      let customer = [];
-      
+      let customer = null;
+
       // Se já tem customer_id (cliente existente confirmado), usar ele
       if (finalData.customer_id) {
-        // customerService.filter returns an array, so we expect [customer]
-        const fetchedCustomer = await customerService.filter({
-          restaurant_id: restaurant.id,
-          id: finalData.customer_id
-        });
-        customer = fetchedCustomer; // This will be [customer_object] or []
+        // Use public endpoint to get customer by phone and restaurant
+        customer = await customerService.getByPhoneAndRestaurant(
+          finalData.phone_whatsapp,
+          restaurant.id
+        );
 
-        console.log("Using existing customer:", customer[0]);
+        console.log("Using existing customer:", customer);
       } else {
-        // Criar ou buscar novo cliente
-        customer = await customerService.filter({
-          restaurant_id: restaurant.id,
-          phone_whatsapp: finalData.phone_whatsapp
-        });
+        // Buscar cliente existente por telefone
+        customer = await customerService.getByPhoneAndRestaurant(
+          finalData.phone_whatsapp,
+          restaurant.id
+        );
 
-        if (customer.length === 0) {
+        if (!customer) {
           console.log("Creating new customer");
-          customer = [await customerService.create({
+          customer = await customerService.createPublic({
             restaurant_id: restaurant.id,
             owner_email: restaurant.owner_email,
             full_name: finalData.full_name,
             phone_whatsapp: finalData.phone_whatsapp,
             email: finalData.email || null,
             birth_date: finalData.birth_date ? new Date(finalData.birth_date).toISOString() : null
-          })];
-        } else if (finalData.birth_date && !customer[0].birth_date) {
+          });
+        } else if (finalData.birth_date && !customer.birth_date) {
           console.log("Updating customer birth date");
-          await customerService.update(customer[0].id, {
+          customer = await customerService.updatePublic(customer.id, {
             birth_date: new Date(finalData.birth_date).toISOString()
           });
         }
       }
 
-      if (customer.length === 0 || !customer[0]) {
+      if (!customer) {
         throw new Error("Cliente não encontrado ou inválido");
       }
 
-      console.log("Customer ready:", customer[0]);
+      console.log("Customer ready:", customer);
 
       // Buscar mesas - filtrar por ambiente se selecionado
       const tableFilters = {
-        restaurant_id: restaurant.id,
         is_active: true,
         status: "available"
       };
@@ -204,11 +198,11 @@ export default function PublicBooking() {
         tableFilters.environment_id = finalData.environment_id;
       }
 
-      const tables = await tableService.filter(tableFilters);
+      // Use public endpoint to get tables
+      const tables = await tableService.getByRestaurant(restaurant.id, tableFilters);
 
-      const allShifts = await shiftService.filter({
-        restaurant_id: restaurant.id
-      });
+      // Use public endpoint to get shifts
+      const allShifts = await shiftService.getByRestaurant(restaurant.id);
       const selectedShift = allShifts.find(s => s.id === finalData.shift_id);
 
       if (!selectedShift) {
@@ -216,8 +210,8 @@ export default function PublicBooking() {
       }
 
       // Buscar reservas ativas (confirmed e pending) para verificar disponibilidade
-      const allReservations = await reservationService.filter({
-        restaurant_id: restaurant.id,
+      // Use public endpoint to get reservations
+      const allReservations = await reservationService.getByRestaurant(restaurant.id, {
         date: finalData.date,
         shift_id: finalData.shift_id
       });
@@ -280,10 +274,11 @@ export default function PublicBooking() {
       const mainTable = selectedTables[0];
       const tableIds = selectedTables.map(t => t.id);
 
-      await reservationService.create({
+      // Use public endpoint to create reservation
+      await reservationService.createPublic({
         restaurant_id: restaurant.id,
         owner_email: restaurant.owner_email,
-        customer_id: customer[0].id,
+        customer_id: customer.id,
         reservation_code: code,
         date: new Date(finalData.date).toISOString(), // Converter para ISO-8601
         shift_id: finalData.shift_id,
@@ -298,6 +293,14 @@ export default function PublicBooking() {
       });
 
       console.log("Reservation created successfully");
+
+      // Atualizar bookingData com os dados do cliente para exibir na confirmação
+      setBookingData(prev => ({
+        ...prev,
+        full_name: customer.full_name,
+        phone_whatsapp: customer.phone_whatsapp,
+        email: customer.email || prev.email
+      }));
 
       setReservationCode(code);
       setCurrentView("confirmation");

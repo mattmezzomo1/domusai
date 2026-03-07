@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import environmentsController from './environments.controller';
-import { authenticate } from '../../middleware/auth.middleware';
+import { authenticate, optionalAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
+
+// Public route (for viewing environments by restaurant)
+router.get('/public/restaurant/:restaurantId', optionalAuth, environmentsController.findByRestaurant);
+
+// Protected routes
 router.use(authenticate);
 
 router.post('/', environmentsController.create);

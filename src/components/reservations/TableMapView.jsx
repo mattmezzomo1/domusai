@@ -343,7 +343,8 @@ export default function TableMapView({ selectedDate, restaurant }) {
             </CardHeader>
             <CardContent className="px-3.5 pb-3.5 space-y-2">
               {tableReservations.map((reservation, index) => {
-                const customer = getCustomer(reservation.customer_id);
+                // Use customer data from reservation (included by backend) or fallback to getCustomer
+                const customer = reservation.customer || getCustomer(reservation.customer_id);
                 const isMultiTable = reservation.linked_tables && reservation.linked_tables.length > 1;
                 return (
                   <Draggable

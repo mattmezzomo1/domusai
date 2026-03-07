@@ -39,6 +39,29 @@ export class CustomersController {
     const result = await customersService.delete(id, ownerEmail);
     res.json(result);
   });
+
+  // Public endpoint to find customer by phone and restaurant
+  findByPhoneAndRestaurant = asyncHandler(async (req: Request, res: Response) => {
+    const phone = req.params.phone as string;
+    const restaurantId = req.params.restaurantId as string;
+    const customer = await customersService.findByPhoneAndRestaurant(phone, restaurantId);
+    res.json(customer);
+  });
+
+  // Public endpoint to create customer (for public booking)
+  createPublic = asyncHandler(async (req: Request, res: Response) => {
+    const data: CreateCustomerDTO = req.body;
+    const customer = await customersService.createPublic(data);
+    res.status(201).json(customer);
+  });
+
+  // Public endpoint to update customer (for public booking)
+  updatePublic = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const data: UpdateCustomerDTO = req.body;
+    const customer = await customersService.updatePublic(id, data);
+    res.json(customer);
+  });
 }
 
 export default new CustomersController();

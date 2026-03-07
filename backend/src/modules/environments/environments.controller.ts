@@ -30,6 +30,13 @@ export class EnvironmentsController {
     const result = await environmentsService.delete(id, req.user!.email);
     res.json(result);
   });
+
+  // Public endpoint to get environments by restaurant
+  findByRestaurant = asyncHandler(async (req: Request, res: Response) => {
+    const restaurantId = req.params.restaurantId as string;
+    const environments = await environmentsService.findByRestaurant(restaurantId, req.query);
+    res.json(environments);
+  });
 }
 
 export default new EnvironmentsController();

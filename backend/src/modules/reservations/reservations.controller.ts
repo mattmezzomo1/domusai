@@ -38,6 +38,20 @@ export class ReservationsController {
     res.json(reservations);
   });
 
+  // Public endpoint to find reservations by restaurant
+  findByRestaurant = asyncHandler(async (req: Request, res: Response) => {
+    const restaurantId = req.params.restaurantId as string;
+    const filters = req.query;
+    const reservations = await reservationsService.findByRestaurant(restaurantId, filters);
+    res.json(reservations);
+  });
+
+  // Public endpoint to create reservation (for public booking)
+  createPublic = asyncHandler(async (req: Request, res: Response) => {
+    const reservation = await reservationsService.createPublic(req.body);
+    res.status(201).json(reservation);
+  });
+
   updatePublic = asyncHandler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const reservation = await reservationsService.updatePublic(id, req.body);

@@ -134,6 +134,79 @@ export class CustomersService {
 
     return { message: 'Customer deleted successfully' };
   }
+
+  // Public method to find customer by phone and restaurant (no auth required)
+  async findByPhoneAndRestaurant(phone: string, restaurantId: string): Promise<CustomerResponseDTO | null> {
+    const customer = await prisma.customer.findFirst({
+      where: {
+        phone_whatsapp: phone,
+        restaurant_id: restaurantId,
+      },
+    });
+
+    if (!customer) {
+      return null;
+    }
+
+    return {
+      ...customer,
+      total_spent: customer.total_spent.toNumber(),
+    } as CustomerResponseDTO;
+  }
+
+  // Public method to create customer (no auth required, for public booking)
+  async createPublic(data: CreateCustomerDTO): Promise<CustomerResponseDTO> {
+    // Verify restaurant exists
+    const restaurant = await prisma.restaurant.findFirst({
+      where: {
+        id: data.restaurant_id,
+      },
+    });
+
+    if (!restaurant) {
+      throw new AppError('Restaurant not found', 404);
+    }
+
+    const customer = await prisma.customer.create({
+      data: {
+        restaurant_id: data.restaurant_id,
+        owner_email: restaurant.owner_email,
+        full_name: data.full_name,
+        phone_whatsapp: data.phone_whatsapp,
+        email: data.email,
+        birth_date: data.birth_date,
+        updated_date: new Date(),
+      },
+    });
+
+    return {
+      ...customer,
+      total_spent: customer.total_spent.toNumber(),
+    } as CustomerResponseDTO;
+  }
+
+  // Public method to update customer (no auth required, for public booking)
+  async updatePublic(id: string, data: UpdateCustomerDTO): Promise<CustomerResponseDTO> {
+    const customer = await prisma.customer.findFirst({
+      where: { id },
+    });
+
+    if (!customer) {
+      throw new AppError('Customer not found', 404);
+    }
+
+    const updateData: any = { ...data, updated_date: new Date() };
+
+    const updatedCustomer = await prisma.customer.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      ...updatedCustomer,
+      total_spent: updatedCustomer.total_spent.toNumber(),
+    } as CustomerResponseDTO;
+  }
 }
 
 export default new CustomersService();

@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import shiftsController from './shifts.controller';
-import { authenticate } from '../../middleware/auth.middleware';
+import { authenticate, optionalAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
+
+// Public route (for viewing shifts by restaurant)
+router.get('/public/restaurant/:restaurantId', optionalAuth, shiftsController.findByRestaurant);
+
+// Protected routes
 router.use(authenticate);
 
 router.post('/', shiftsController.create);

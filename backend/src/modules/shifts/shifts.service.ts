@@ -104,6 +104,28 @@ export class ShiftsService {
     await prisma.shift.delete({ where: { id } });
     return { message: 'Shift deleted successfully' };
   }
+
+  // Public method to get shifts by restaurant (no auth required)
+  async findByRestaurant(restaurantId: string, filters?: FilterParams): Promise<ShiftResponseDTO[]> {
+    const where: any = { restaurant_id: restaurantId };
+
+    if (filters?.active !== undefined) {
+      where.active = filters.active === 'true' || filters.active === true;
+    } else {
+      // By default, only return active shifts for public access
+      where.active = true;
+    }
+
+    const shifts = await prisma.shift.findMany({
+      where,
+      orderBy: { start_time: 'asc' },
+    });
+
+    return shifts.map(shift => ({
+      ...shift,
+      days_of_week: JSON.parse(shift.days_of_week as string),
+    })) as ShiftResponseDTO[];
+  }
 }
 
 export default new ShiftsService();

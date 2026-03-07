@@ -234,6 +234,81 @@ export class ReservationsService {
     await prisma.reservation.delete({ where: { id } });
     return { message: 'Reservation deleted successfully' };
   }
+
+  // Public method to find reservations by restaurant (no auth required)
+  async findByRestaurant(restaurantId: string, filters?: FilterParams): Promise<ReservationResponseDTO[]> {
+    const where: any = { restaurant_id: restaurantId };
+
+    if (filters?.customer_id) where.customer_id = filters.customer_id;
+    // Convert status to UPPERCASE to match enum ReservationStatus (PENDING, CONFIRMED, CANCELLED, COMPLETED)
+    if (filters?.status) where.status = filters.status.toUpperCase();
+    if (filters?.date) where.date = new Date(filters.date as string);
+    if (filters?.shift_id) where.shift_id = filters.shift_id;
+
+    const reservations = await prisma.reservation.findMany({
+      where,
+      orderBy: { date: 'desc' },
+      include: {
+        customer: true, // Include customer data
+      },
+    });
+
+    return reservations.map((r) => ({
+      ...r,
+      linked_tables: JSON.parse(r.linked_tables as string),
+    })) as ReservationResponseDTO[];
+  }
+
+  // Public method to create reservation (no auth required, for public booking)
+  async createPublic(data: CreateReservationDTO): Promise<ReservationResponseDTO> {
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { id: data.restaurant_id },
+    });
+
+    if (!restaurant) {
+      throw new AppError('Restaurant not found', 404);
+    }
+
+    // Generate unique reservation code
+    let reservationCode = this.generateReservationCode();
+    let existing = await prisma.reservation.findUnique({
+      where: { reservation_code: reservationCode },
+    });
+
+    while (existing) {
+      reservationCode = this.generateReservationCode();
+      existing = await prisma.reservation.findUnique({
+        where: { reservation_code: reservationCode },
+      });
+    }
+
+    const reservation = await prisma.reservation.create({
+      data: {
+        restaurant_id: data.restaurant_id,
+        owner_email: restaurant.owner_email,
+        customer_id: data.customer_id,
+        reservation_code: reservationCode,
+        date: data.date,
+        shift_id: data.shift_id,
+        slot_time: data.slot_time,
+        party_size: data.party_size,
+        table_id: data.table_id,
+        linked_tables: JSON.stringify(data.linked_tables || []),
+        environment_id: data.environment_id,
+        // Convert status to UPPERCASE to match enum ReservationStatus
+        status: (data.status ? data.status.toUpperCase() : 'PENDING') as any,
+        // Convert source to UPPERCASE to match enum ReservationSource (PHONE, ONLINE)
+        source: data.source.toUpperCase() as any,
+        notes: data.notes,
+        updated_date: new Date(),
+      },
+    });
+
+    return {
+      ...reservation,
+      linked_tables: JSON.parse(reservation.linked_tables as string),
+    } as ReservationResponseDTO;
+  }
 }
 
 export default new ReservationsService();

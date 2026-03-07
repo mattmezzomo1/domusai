@@ -7,6 +7,8 @@ const router = Router();
 // Public routes
 router.get('/code/:code', optionalAuth, reservationsController.findByCode);
 router.get('/phone/:phone', optionalAuth, reservationsController.findByPhone);
+router.get('/public/restaurant/:restaurantId', optionalAuth, reservationsController.findByRestaurant);
+router.post('/public', optionalAuth, reservationsController.createPublic);
 router.put('/public/:id', optionalAuth, reservationsController.updatePublic);
 
 // Protected routes

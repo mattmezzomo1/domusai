@@ -24,13 +24,10 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
       if (cleanPhone.length >= 10) {
         setIsLoadingCustomer(true);
         try {
-          const customers = await customerService.filter({
-            restaurant_id: restaurant.id,
-            phone_whatsapp: cleanPhone
-          });
+          // Use public endpoint that doesn't require authentication
+          const customer = await customerService.getByPhoneAndRestaurant(cleanPhone, restaurant.id);
 
-          if (customers.length > 0) {
-            const customer = customers[0];
+          if (customer) {
             setExistingCustomer(customer);
 
             // Preencher automaticamente os dados do cliente
@@ -59,6 +56,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
           }
         } catch (error) {
           console.error("Erro ao buscar cliente:", error);
+          setExistingCustomer(null);
         } finally {
           setIsLoadingCustomer(false);
         }

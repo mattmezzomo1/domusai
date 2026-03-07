@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import tablesController from './tables.controller';
-import { authenticate } from '../../middleware/auth.middleware';
+import { authenticate, optionalAuth } from '../../middleware/auth.middleware';
 
 const router = Router();
+
+// Public route (for public booking page)
+router.get('/public/restaurant/:restaurantId', optionalAuth, tablesController.findByRestaurant);
+
+// Protected routes
 router.use(authenticate);
 
 router.post('/', tablesController.create);

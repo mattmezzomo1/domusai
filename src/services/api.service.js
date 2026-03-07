@@ -46,6 +46,16 @@ export const restaurantService = {
     return restaurants[0] || null;
   },
 
+  checkSlugAvailability: async (slug, currentRestaurantId = null) => {
+    if (USE_MOCK) {
+      // Mock implementation
+      return { available: true, isOwn: false };
+    }
+    if (USE_NEW_API) return newRestaurantService.checkSlugAvailability(slug, currentRestaurantId);
+    // Base44 implementation would go here
+    return { available: true, isOwn: false };
+  },
+
   create: async (data) => {
     if (USE_MOCK) return mockDataService.restaurants.create(data);
     if (USE_NEW_API) return newRestaurantService.create(data);
@@ -79,6 +89,20 @@ export const reservationService = {
     if (USE_MOCK) return mockDataService.reservations.filter(filters, sort);
     if (USE_NEW_API) return newReservationService.filter(filters, sort);
     return base44.entities.Reservation.filter(filters, sort);
+  },
+
+  // Public method to get reservations by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters) => {
+    if (USE_MOCK) return mockDataService.reservations.filter({ ...filters, restaurant_id: restaurantId });
+    if (USE_NEW_API) return newReservationService.getByRestaurant(restaurantId, filters);
+    return base44.entities.Reservation.filter({ ...filters, restaurant_id: restaurantId });
+  },
+
+  // Public method to create reservation (no auth required, for public booking)
+  createPublic: async (data) => {
+    if (USE_MOCK) return mockDataService.reservations.create(data);
+    if (USE_NEW_API) return newReservationService.createPublic(data);
+    return base44.entities.Reservation.create(data);
   },
 
   create: async (data) => {
@@ -116,6 +140,32 @@ export const customerService = {
     return base44.entities.Customer.filter(filters, sort);
   },
 
+  // Public method to find customer by phone and restaurant (no auth required)
+  getByPhoneAndRestaurant: async (phone, restaurantId) => {
+    if (USE_MOCK) {
+      const customers = mockDataService.customers.filter({ phone_whatsapp: phone, restaurant_id: restaurantId });
+      return customers.length > 0 ? customers[0] : null;
+    }
+    if (USE_NEW_API) return newCustomerService.getByPhoneAndRestaurant(phone, restaurantId);
+    // For Base44, fallback to filter
+    const customers = await base44.entities.Customer.filter({ phone_whatsapp: phone, restaurant_id: restaurantId });
+    return customers.length > 0 ? customers[0] : null;
+  },
+
+  // Public method to create customer (no auth required, for public booking)
+  createPublic: async (data) => {
+    if (USE_MOCK) return mockDataService.customers.create(data);
+    if (USE_NEW_API) return newCustomerService.createPublic(data);
+    return base44.entities.Customer.create(data);
+  },
+
+  // Public method to update customer (no auth required, for public booking)
+  updatePublic: async (id, data) => {
+    if (USE_MOCK) return mockDataService.customers.update(id, data);
+    if (USE_NEW_API) return newCustomerService.updatePublic(id, data);
+    return base44.entities.Customer.update(id, data);
+  },
+
   create: async (data) => {
     if (USE_MOCK) return mockDataService.customers.create(data);
     if (USE_NEW_API) return newCustomerService.create(data);
@@ -151,6 +201,13 @@ export const tableService = {
     return base44.entities.Table.filter(filters, sort);
   },
 
+  // Public method to get tables by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters) => {
+    if (USE_MOCK) return mockDataService.tables.filter({ ...filters, restaurant_id: restaurantId });
+    if (USE_NEW_API) return newTableService.getByRestaurant(restaurantId, filters);
+    return base44.entities.Table.filter({ ...filters, restaurant_id: restaurantId });
+  },
+
   create: async (data) => {
     if (USE_MOCK) return mockDataService.tables.create(data);
     if (USE_NEW_API) return newTableService.create(data);
@@ -184,6 +241,14 @@ export const shiftService = {
     if (USE_MOCK) return mockDataService.shifts.filter(filters, sort);
     if (USE_NEW_API) return newShiftService.filter(filters, sort);
     return base44.entities.Shift.filter(filters, sort);
+  },
+
+  // Public method to get shifts by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    if (USE_MOCK) return mockDataService.shifts.filter({ restaurant_id: restaurantId, ...filters });
+    if (USE_NEW_API) return newShiftService.getByRestaurant(restaurantId, filters);
+    // For Base44, fallback to filter
+    return base44.entities.Shift.filter({ restaurant_id: restaurantId, ...filters });
   },
 
   create: async (data) => {
@@ -254,6 +319,14 @@ export const environmentService = {
     if (USE_MOCK) return mockDataService.environments?.filter(filters, sort) || [];
     if (USE_NEW_API) return newEnvironmentService.filter(filters, sort);
     return base44.entities.Environment.filter(filters, sort);
+  },
+
+  // Public method to get environments by restaurant (no auth required)
+  getByRestaurant: async (restaurantId, filters = {}) => {
+    if (USE_MOCK) return mockDataService.environments?.filter({ restaurant_id: restaurantId, ...filters }) || [];
+    if (USE_NEW_API) return newEnvironmentService.getByRestaurant(restaurantId, filters);
+    // For Base44, fallback to filter
+    return base44.entities.Environment.filter({ restaurant_id: restaurantId, ...filters });
   },
 
   create: async (data) => {

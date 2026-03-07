@@ -325,17 +325,6 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </header>
 
-          {/* Header Desktop */}
-          <header className="hidden md:block bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
-            <div className="flex items-center justify-between">
-              <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f1565be1fb405a8ae93cd6/df3f23b2d_FULLBLACKSEMREGISTROpdf7.png" 
-                alt="DOMUS" 
-                className="h-7 w-auto"
-              />
-            </div>
-          </header>
-
           {/* Content */}
           <div className="flex-1 overflow-auto pb-24 md:pb-0">
             {children}

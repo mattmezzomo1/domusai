@@ -95,6 +95,23 @@ export class TablesService {
     await prisma.table.delete({ where: { id } });
     return { message: 'Table deleted successfully' };
   }
+
+  // Public method to find tables by restaurant (no auth required)
+  async findByRestaurant(restaurantId: string, filters?: FilterParams): Promise<TableResponseDTO[]> {
+    const where: any = { restaurant_id: restaurantId };
+
+    if (filters?.environment_id) where.environment_id = filters.environment_id;
+    // Convert status to UPPERCASE to match enum TableStatus (AVAILABLE, UNAVAILABLE, BLOCKED)
+    if (filters?.status) where.status = filters.status.toUpperCase();
+    if (filters?.is_active !== undefined) where.is_active = filters.is_active === 'true';
+
+    const tables = await prisma.table.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
+
+    return tables as TableResponseDTO[];
+  }
 }
 
 export default new TablesService();
