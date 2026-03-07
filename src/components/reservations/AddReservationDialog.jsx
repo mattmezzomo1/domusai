@@ -30,7 +30,6 @@ export default function AddReservationDialog({ trigger }) {
     slot_time: '',
     party_size: '2',
     notes: '',
-    cpf: '',
     whatsapp: '',
     customer_name: ''
   };
@@ -319,7 +318,7 @@ export default function AddReservationDialog({ trigger }) {
     }
 
     if (!formData.customer_id) {
-      setError('Por favor, preencha o CPF ou WhatsApp para buscar o cliente.');
+      setError('Por favor, preencha o WhatsApp para buscar o cliente.');
       return;
     }
 
@@ -329,29 +328,6 @@ export default function AddReservationDialog({ trigger }) {
 
   const getTodayDate = () => {
     return new Date().toISOString().split('T')[0];
-  };
-
-  // Buscar cliente por CPF
-  const handleCpfChange = (value) => {
-    setFormData({ ...formData, cpf: value });
-
-    if (value.length >= 11) { // CPF tem 11 dígitos
-      const cleanCpf = value.replace(/\D/g, '');
-      const customer = customers.find(c => c.cpf && c.cpf.replace(/\D/g, '') === cleanCpf);
-
-      if (customer) {
-        setCustomerFound(customer);
-        setFormData({
-          ...formData,
-          cpf: value,
-          customer_id: customer.id,
-          customer_name: customer.full_name,
-          whatsapp: customer.phone_whatsapp
-        });
-      } else {
-        setCustomerFound(null);
-      }
-    }
   };
 
   // Buscar cliente por WhatsApp
@@ -368,11 +344,16 @@ export default function AddReservationDialog({ trigger }) {
           ...formData,
           whatsapp: value,
           customer_id: customer.id,
-          customer_name: customer.full_name,
-          cpf: customer.cpf || ''
+          customer_name: customer.full_name
         });
       } else {
         setCustomerFound(null);
+        // Limpar customer_id se não encontrou
+        setFormData({
+          ...formData,
+          whatsapp: value,
+          customer_id: ''
+        });
       }
     }
   };
@@ -492,31 +473,19 @@ export default function AddReservationDialog({ trigger }) {
             </div>
           </div>
 
-          {/* Linha 3: CPF e WhatsApp */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                value={formData.cpf}
-                onChange={(e) => handleCpfChange(e.target.value)}
-                placeholder="000.000.000-00"
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input
-                id="whatsapp"
-                type="text"
-                value={formData.whatsapp}
-                onChange={(e) => handleWhatsAppChange(e.target.value)}
-                placeholder="(00) 00000-0000"
-                className="h-11"
-              />
-            </div>
+          {/* Linha 3: WhatsApp */}
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
+            <Input
+              id="whatsapp"
+              type="text"
+              value={formData.whatsapp}
+              onChange={(e) => handleWhatsAppChange(e.target.value)}
+              placeholder="(00) 00000-0000"
+              className="h-11"
+              required
+            />
+            <p className="text-xs text-gray-500">Digite o WhatsApp para buscar o cliente no CRM</p>
           </div>
 
           {/* Linha 4: Nome do Cliente */}
