@@ -22,8 +22,15 @@ const AuthenticatedApp = () => {
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-amber-50/30">
+        <div className="text-center">
+          <img
+            src="/logo.png"
+            alt="Domus"
+            className="w-16 h-16 mx-auto mb-4 animate-pulse object-contain"
+          />
+          <p className="text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }

@@ -145,7 +145,11 @@ export default function Layout({ children, currentPageName }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30">
         <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <img
+            src="/logo.png"
+            alt="Domus"
+            className="w-16 h-16 mx-auto mb-4 animate-pulse object-contain"
+          />
           <p className="text-gray-600">Carregando...</p>
         </div>
       </div>
@@ -304,7 +308,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src="/logo.png"
+                  src="/logo-base.png"
                   alt="Logo Domus"
                   className="h-8 w-auto object-contain"
                 />

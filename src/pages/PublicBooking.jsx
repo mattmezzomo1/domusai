@@ -316,7 +316,11 @@ export default function PublicBooking() {
     return (
       <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin w-16 h-16 border-4 border-[#C47B3C] border-t-transparent rounded-full mx-auto mb-6"></div>
+          <img
+            src="/logo.png"
+            alt="Domus"
+            className="w-20 h-20 mx-auto mb-6 animate-pulse object-contain"
+          />
           <p className="text-[#AAAAAA] text-lg font-light tracking-wide">Carregando...</p>
         </div>
       </div>

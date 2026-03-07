@@ -66,7 +66,7 @@ export default function FreeTrialAdmin() {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/logo.png"
+              src="/logo-base.png"
               alt="Logo Domus"
               className="h-16 w-auto object-contain"
             />
