@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, Layers, Clock, Users, AlertCircle, Calendar } from "lucide-react";
+import { Home, Layers, Clock, Users, AlertCircle, Calendar, Activity } from "lucide-react";
 import SubscriptionGuard from "../components/subscription/SubscriptionGuard";
 
 import RestaurantSettings from "../components/settings/RestaurantSettings";
@@ -9,6 +9,7 @@ import TablesSettings from "../components/settings/TablesSettings";
 import ShiftsSettings from "../components/settings/ShiftsSettings";
 import ExceptionsSettings from "../components/settings/ExceptionsSettings";
 import AdvancedSettings from "../components/settings/AdvancedSettings";
+import TrackingSettings from "../components/settings/TrackingSettings";
 
 export default function Settings() {
   return (
@@ -21,7 +22,7 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="restaurant" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 h-auto gap-2 bg-transparent">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 h-auto gap-2 bg-transparent">
             <TabsTrigger 
               value="restaurant" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white shadow-sm py-3 text-xs md:text-sm"
@@ -57,12 +58,19 @@ export default function Settings() {
               <Calendar className="w-4 h-4 mr-2" />
               Exceções
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="advanced"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white shadow-sm py-3 text-xs md:text-sm"
             >
               <AlertCircle className="w-4 h-4 mr-2" />
               Avançado
+            </TabsTrigger>
+            <TabsTrigger
+              value="tracking"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C47B3C] data-[state=active]:to-[#A56A38] data-[state=active]:text-white shadow-sm py-3 text-xs md:text-sm"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Tracking
             </TabsTrigger>
           </TabsList>
 
@@ -88,6 +96,10 @@ export default function Settings() {
 
           <TabsContent value="advanced">
             <AdvancedSettings />
+          </TabsContent>
+
+          <TabsContent value="tracking">
+            <TrackingSettings />
           </TabsContent>
         </Tabs>
       </div>

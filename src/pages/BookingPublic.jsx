@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { restaurantService, customerService, tableService, shiftService, reservationService, environmentService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle } from "lucide-react";
+import { trackingService } from "@/services/tracking.service";
 
 import BookingStep1 from "../components/public/BookingStep1";
 import BookingStep2 from "../components/public/BookingStep2";
@@ -102,6 +103,13 @@ export default function BookingPublic() {
     retry: false,
   });
 
+  // Initialize tracking when restaurant is loaded
+  useEffect(() => {
+    if (restaurant) {
+      trackingService.initialize(restaurant);
+    }
+  }, [restaurant]);
+
   const handleHomeSelection = (view) => {
     setCurrentView(view);
     setError(null);
@@ -135,6 +143,15 @@ export default function BookingPublic() {
 
   const handleStep1Complete = (data) => {
     setBookingData({ ...bookingData, ...data });
+
+    // Track step 1 completion
+    trackingService.trackBookingStep(1, {
+      date: data.date,
+      party_size: data.party_size,
+      shift_id: data.shift_id,
+      environment_id: data.environment_id,
+    });
+
     setStep(2);
     setError(null);
   };
@@ -142,11 +159,33 @@ export default function BookingPublic() {
   const handleStep2Complete = (data) => {
     const updatedData = { ...bookingData, ...data };
     setBookingData(updatedData);
+
+    // Track step 2 completion
+    trackingService.trackBookingStep(2, {
+      slot_time: data.slot_time,
+      date: updatedData.date,
+      party_size: updatedData.party_size,
+    });
+
     setStep(3);
     setError(null);
   };
 
   const handleStep3Complete = async (data) => {
+    // Track step 3 completion (InitiateCheckout)
+    trackingService.trackBookingStep(3, {
+      full_name: data.full_name,
+      email: data.email,
+      phone: data.phone_whatsapp,
+    });
+
+    // Set user data for enhanced matching
+    trackingService.setUserData({
+      email: data.email,
+      phone_whatsapp: data.phone_whatsapp,
+      full_name: data.full_name,
+    });
+
     if (isSubmitting) return;
     
     setError(null);
@@ -288,6 +327,14 @@ export default function BookingPublic() {
         status: "PENDING", // Status em UPPERCASE
         notes: finalData.notes || `Mesas alocadas: ${selectedTables.map(t => t.name).join(', ')}`,
         source: "online"
+      });
+
+      // Track completed reservation (Purchase/Lead)
+      trackingService.trackReservationComplete({
+        reservation_code: code,
+        party_size: finalData.party_size,
+        date: finalData.date,
+        slot_time: finalData.slot_time,
       });
 
       setReservationCode(code);

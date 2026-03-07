@@ -71,6 +71,9 @@ export interface UpdateRestaurantDTO {
   enable_waitlist?: boolean;
   enable_table_joining?: boolean;
   enable_modifications?: boolean;
+  facebook_pixel_id?: string;
+  meta_conversion_api_token?: string;
+  gtm_container_id?: string;
 }
 
 export interface RestaurantResponseDTO {
@@ -94,6 +97,9 @@ export interface RestaurantResponseDTO {
   enable_waitlist?: boolean;
   enable_table_joining?: boolean;
   enable_modifications?: boolean;
+  facebook_pixel_id?: string;
+  meta_conversion_api_token?: string;
+  gtm_container_id?: string;
   created_date: Date;
   updated_date: Date;
 }

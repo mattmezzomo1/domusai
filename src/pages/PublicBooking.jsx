@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { restaurantService, customerService, tableService, shiftService, reservationService, environmentService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle } from "lucide-react";
+import { trackingService } from "@/services/tracking.service";
 
 import BookingStep1 from "../components/public/BookingStep1";
 import BookingStep2 from "../components/public/BookingStep2";
@@ -85,6 +86,13 @@ export default function PublicBooking() {
     initialData: [],
   });
 
+  // Initialize tracking when restaurant is loaded
+  useEffect(() => {
+    if (restaurant) {
+      trackingService.initialize(restaurant);
+    }
+  }, [restaurant]);
+
   const handleHomeSelection = (view) => {
     setCurrentView(view);
     setError(null);
@@ -119,7 +127,15 @@ export default function PublicBooking() {
   const handleStep1Complete = (data) => {
     console.log("Step 1 Complete - Data:", data);
     setBookingData({ ...bookingData, ...data });
-    
+
+    // Track step 1 completion
+    trackingService.trackBookingStep(1, {
+      date: data.date,
+      party_size: data.party_size,
+      shift_id: data.shift_id,
+      environment_id: data.environment_id,
+    });
+
     // Sempre ir para step 2 (seleção de horário)
     setStep(2);
     setError(null);
@@ -127,9 +143,17 @@ export default function PublicBooking() {
 
   const handleStep2Complete = (data) => {
     console.log("Step 2 Complete - Data:", data);
-    
+
     const updatedData = { ...bookingData, ...data };
     setBookingData(updatedData);
+
+    // Track step 2 completion
+    trackingService.trackBookingStep(2, {
+      slot_time: data.slot_time,
+      date: updatedData.date,
+      party_size: updatedData.party_size,
+    });
+
     setStep(3);
     setError(null);
   };
@@ -137,13 +161,27 @@ export default function PublicBooking() {
   const handleStep3Complete = async (data) => {
     // Prevenir múltiplas submissões
     if (isSubmitting) return;
-    
+
     setError(null);
     setIsSubmitting(true);
     const finalData = { ...bookingData, ...data };
-    
+
     console.log("Step 3 Complete - Final Data:", finalData);
-    
+
+    // Track step 3 completion (InitiateCheckout)
+    trackingService.trackBookingStep(3, {
+      full_name: finalData.full_name,
+      email: finalData.email,
+      phone: finalData.phone_whatsapp,
+    });
+
+    // Set user data for enhanced matching
+    trackingService.setUserData({
+      email: finalData.email,
+      phone_whatsapp: finalData.phone_whatsapp,
+      full_name: finalData.full_name,
+    });
+
     try {
       let customer = null;
 
@@ -293,6 +331,14 @@ export default function PublicBooking() {
       });
 
       console.log("Reservation created successfully");
+
+      // Track completed reservation (Purchase/Lead)
+      trackingService.trackReservationComplete({
+        reservation_code: code,
+        party_size: finalData.party_size,
+        date: finalData.date,
+        slot_time: finalData.slot_time,
+      });
 
       // Atualizar bookingData com os dados do cliente para exibir na confirmação
       setBookingData(prev => ({

@@ -64,6 +64,9 @@ model Restaurant {
   enable_waitlist           Boolean       @default(true)
   enable_table_joining      Boolean       @default(true)
   enable_modifications      Boolean       @default(true)
+  facebook_pixel_id         String?
+  meta_conversion_api_token String?       @db.VarChar(500)
+  gtm_container_id          String?
   customers                 Customer[]
   environments              Environment[]
   reservations              Reservation[]
@@ -73,6 +76,8 @@ model Restaurant {
 
   @@index([owner_email])
   @@index([slug])
+  @@index([facebook_pixel_id])
+  @@index([gtm_container_id])
   @@map("restaurants")
 }
 
