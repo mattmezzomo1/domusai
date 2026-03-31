@@ -4,6 +4,7 @@ import {
   CreateRestaurantDTO,
   UpdateRestaurantDTO,
   RestaurantResponseDTO,
+  RestaurantPublicResponseDTO,
   FilterParams,
 } from '../../types';
 
@@ -74,7 +75,7 @@ export class RestaurantsService {
     return restaurant as RestaurantResponseDTO;
   }
 
-  async findBySlug(slug: string): Promise<RestaurantResponseDTO> {
+  async findBySlug(slug: string): Promise<RestaurantPublicResponseDTO> {
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug },
     });
@@ -83,7 +84,9 @@ export class RestaurantsService {
       throw new AppError('Restaurant not found', 404);
     }
 
-    return restaurant as RestaurantResponseDTO;
+    // Strip the CAPI token — it must never be exposed to the browser
+    const { meta_conversion_api_token: _token, ...publicRestaurant } = restaurant as any;
+    return publicRestaurant as RestaurantPublicResponseDTO;
   }
 
   async update(

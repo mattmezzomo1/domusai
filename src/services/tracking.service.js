@@ -1,36 +1,41 @@
 /**
  * Tracking Service
- * Handles integration with Facebook Pixel, Meta Conversions API, and Google Tag Manager
+ * Handles integration with Facebook Pixel and Google Tag Manager.
+ *
+ * Meta Conversions API (CAPI) calls are made exclusively server-side.
+ * The CAPI token is NEVER exposed to the browser.
+ * Deduplication between browser Pixel and CAPI is achieved via a shared
+ * `eventID` / `event_id` generated on the server and returned to the
+ * browser after reservation creation.
  */
 
 class TrackingService {
   constructor() {
     this.config = {
       facebookPixelId: null,
-      metaConversionApiToken: null,
+      // Note: metaConversionApiToken is intentionally NOT stored here.
+      // It lives only on the server.
       gtmContainerId: null,
     };
     this.initialized = false;
   }
 
   /**
-   * Initialize tracking with restaurant configuration
+   * Initialize tracking with public restaurant configuration.
+   * `restaurant` must be the PUBLIC response (no meta_conversion_api_token).
    */
   initialize(restaurant) {
     if (!restaurant) return;
 
     this.config = {
-      facebookPixelId: restaurant.facebook_pixel_id,
-      metaConversionApiToken: restaurant.meta_conversion_api_token,
-      gtmContainerId: restaurant.gtm_container_id,
+      facebookPixelId: restaurant.facebook_pixel_id || null,
+      gtmContainerId: restaurant.gtm_container_id || null,
     };
 
-    // Initialize Facebook Pixel
     if (this.config.facebookPixelId) {
       this.initializeFacebookPixel();
     }
 
-    // Initialize Google Tag Manager
     if (this.config.gtmContainerId) {
       this.initializeGTM();
     }
@@ -73,42 +78,19 @@ class TrackingService {
   }
 
   /**
-   * Track event - sends to all configured platforms
+   * Track a standard event on all configured platforms.
+   * Does NOT accept an eventID — use trackLeadEvent for Lead deduplication.
    */
   trackEvent(eventName, eventData = {}) {
     if (!this.initialized) return;
 
-    // Track with Facebook Pixel
     if (this.config.facebookPixelId && window.fbq) {
-      this.trackFacebookEvent(eventName, eventData);
+      window.fbq('track', eventName, eventData);
     }
 
-    // Track with Google Tag Manager
     if (this.config.gtmContainerId && window.dataLayer) {
       this.trackGTMEvent(eventName, eventData);
     }
-
-    // Send to Meta Conversions API (server-side)
-    if (this.config.metaConversionApiToken) {
-      this.sendToMetaConversionsAPI(eventName, eventData);
-    }
-  }
-
-  /**
-   * Track Facebook Pixel event
-   */
-  trackFacebookEvent(eventName, eventData) {
-    const fbEventMap = {
-      'InitiateCheckout': 'InitiateCheckout',
-      'AddToCart': 'AddToCart',
-      'ViewContent': 'ViewContent',
-      'Lead': 'Lead',
-      'CompleteRegistration': 'CompleteRegistration',
-      'Purchase': 'Purchase',
-    };
-
-    const fbEventName = fbEventMap[eventName] || eventName;
-    window.fbq('track', fbEventName, eventData);
   }
 
   /**
@@ -122,19 +104,38 @@ class TrackingService {
   }
 
   /**
-   * Send event to Meta Conversions API (server-side tracking)
+   * Track the Lead event on the browser Pixel with the server-generated eventID.
+   *
+   * This is the KEY deduplication step: the same `eventID` is sent by the
+   * server to Meta CAPI. Meta uses this to deduplicate both events and count
+   * only one conversion.
+   *
+   * @param {string} eventId  - UUID returned by the backend after reservation creation
+   * @param {object} userData - Raw (unhashed) user data for Pixel Advanced Matching
    */
-  async sendToMetaConversionsAPI(eventName, eventData) {
-    // This would typically be done server-side for security
-    // For now, we'll log it for demonstration
-    console.log('Meta Conversions API Event:', {
-      eventName,
-      eventData,
-      token: this.config.metaConversionApiToken ? '***' : null,
-    });
+  trackLeadEvent(eventId, userData = {}) {
+    if (!this.initialized || !this.config.facebookPixelId) return;
 
-    // In production, you would send this to your backend
-    // which would then forward to Meta's Conversions API
+    if (!window.fbq) {
+      console.warn('[Tracking] fbq not available — Lead event skipped');
+      return;
+    }
+
+    const pixelUserData = {};
+    if (userData.email) pixelUserData.em = userData.email;
+    if (userData.phone) pixelUserData.ph = userData.phone;
+    if (userData.firstName) pixelUserData.fn = userData.firstName;
+    if (userData.lastName) pixelUserData.ln = userData.lastName;
+
+    // fbq('track', eventName, customData, eventData)
+    // eventData.eventID must match the server-side event_id for deduplication
+    window.fbq('track', 'Lead', pixelUserData, { eventID: eventId });
+
+    console.log(`[Tracking] Lead Pixel event fired. eventID=${eventId}`);
+
+    if (this.config.gtmContainerId && window.dataLayer) {
+      this.trackGTMEvent('Lead', { event_id: eventId, ...pixelUserData });
+    }
   }
 
   /**
@@ -159,47 +160,59 @@ class TrackingService {
   }
 
   /**
-   * Track completed reservation
+   * @deprecated Use trackLeadEvent() instead for proper deduplication.
+   * Kept for backwards compatibility with non-Lead events.
    */
   trackReservationComplete(reservationData) {
     this.trackEvent('Purchase', {
       content_name: 'Reservation Completed',
       content_category: 'Booking',
-      value: 0, // You can add a value if applicable
+      value: 0,
       currency: 'BRL',
       reservation_code: reservationData.reservation_code,
       party_size: reservationData.party_size,
       date: reservationData.date,
       slot_time: reservationData.slot_time,
     });
-
-    // Also track as Lead for Facebook
-    if (this.config.facebookPixelId && window.fbq) {
-      window.fbq('track', 'Lead', {
-        content_name: 'Reservation Lead',
-        value: 0,
-        currency: 'BRL',
-      });
-    }
   }
 
   /**
-   * Track user data for enhanced matching (GDPR compliant)
+   * Read a cookie value by name from document.cookie.
+   * Used to capture _fbp and _fbc for CAPI enrichment.
+   */
+  getCookie(name) {
+    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  /**
+   * Build the tracking context object to include in the reservation creation request.
+   * This data is forwarded to the backend which sends it to Meta CAPI.
+   */
+  buildTrackingContext({ email, phone, fullName } = {}) {
+    return {
+      fbp: this.getCookie('_fbp'),
+      fbc: this.getCookie('_fbc'),
+      event_source_url: window.location.href,
+      email: email || null,
+      phone: phone || null,
+      full_name: fullName || null,
+    };
+  }
+
+  /**
+   * Set user data for Pixel Advanced Matching (called on init or after login).
    */
   setUserData(userData) {
-    if (!this.initialized) return;
+    if (!this.initialized || !this.config.facebookPixelId || !window.fbq) return;
 
-    // Facebook Pixel Advanced Matching
-    if (this.config.facebookPixelId && window.fbq && userData.email) {
-      window.fbq('init', this.config.facebookPixelId, {
-        em: userData.email,
-        ph: userData.phone_whatsapp,
-        fn: userData.full_name?.split(' ')[0],
-        ln: userData.full_name?.split(' ').slice(1).join(' '),
-      });
-    }
+    window.fbq('init', this.config.facebookPixelId, {
+      em: userData.email || undefined,
+      ph: userData.phone_whatsapp || undefined,
+      fn: userData.full_name?.split(' ')[0] || undefined,
+      ln: userData.full_name?.split(' ').slice(1).join(' ') || undefined,
+    });
 
-    // GTM User Data
     if (this.config.gtmContainerId && window.dataLayer) {
       window.dataLayer.push({
         event: 'user_data_available',
@@ -215,7 +228,6 @@ class TrackingService {
   clear() {
     this.config = {
       facebookPixelId: null,
-      metaConversionApiToken: null,
       gtmContainerId: null,
     };
     this.initialized = false;

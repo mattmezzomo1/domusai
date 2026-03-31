@@ -75,6 +75,12 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
       return;
     }
 
+    // Email obrigatório — melhora a qualidade do matching no Meta
+    if (!formData.email || !formData.email.includes('@')) {
+      alert("E-mail é obrigatório para confirmar sua reserva");
+      return;
+    }
+
     // Validar WhatsApp (formato básico)
     const cleanPhone = formData.phone_whatsapp.replace(/\D/g, '');
     if (cleanPhone.length < 10 || cleanPhone.length > 11) {
@@ -179,17 +185,18 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
           />
         </div>
 
-        {/* Email (Opcional) */}
+        {/* Email (Obrigatório) */}
         <div>
           <label className="text-white text-sm font-medium flex items-center gap-2 mb-2">
             <Mail className="w-4 h-4 text-[#C47B3C]" />
-            Email (opcional)
+            Email <span className="text-[#C47B3C]">*</span>
           </label>
           <input
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="seu@email.com"
+            required
             className="w-full p-4 bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
           />
         </div>

@@ -1,6 +1,8 @@
+import { randomUUID } from 'crypto';
 import prisma from '../../utils/db';
 import { AppError } from '../../middleware/error.middleware';
 import { CreateReservationDTO, UpdateReservationDTO, ReservationResponseDTO, FilterParams } from '../../types';
+import { sendMetaLeadEvent } from '../../utils/meta-capi.util';
 
 export class ReservationsService {
   private generateReservationCode(): string {
@@ -260,7 +262,13 @@ export class ReservationsService {
   }
 
   // Public method to create reservation (no auth required, for public booking)
-  async createPublic(data: CreateReservationDTO): Promise<ReservationResponseDTO> {
+  async createPublic(
+    data: CreateReservationDTO,
+    serverContext?: {
+      clientIp?: string;
+      userAgent?: string;
+    }
+  ): Promise<ReservationResponseDTO> {
     const restaurant = await prisma.restaurant.findFirst({
       where: { id: data.restaurant_id },
     });
@@ -282,6 +290,9 @@ export class ReservationsService {
       });
     }
 
+    // Generate the deduplication event_id shared between browser Pixel and CAPI
+    const metaEventId = randomUUID();
+
     const reservation = await prisma.reservation.create({
       data: {
         restaurant_id: data.restaurant_id,
@@ -295,14 +306,36 @@ export class ReservationsService {
         table_id: data.table_id,
         linked_tables: JSON.stringify(data.linked_tables || []),
         environment_id: data.environment_id,
-        // Convert status to UPPERCASE to match enum ReservationStatus
         status: (data.status ? data.status.toUpperCase() : 'PENDING') as any,
-        // Convert source to UPPERCASE to match enum ReservationSource (PHONE, ONLINE)
         source: data.source.toUpperCase() as any,
         notes: data.notes,
+        meta_event_id: metaEventId,
         updated_date: new Date(),
       },
     });
+
+    // Fire CAPI Lead event asynchronously — must never block or break the reservation response
+    const tracking = data._tracking;
+    if (restaurant.facebook_pixel_id && restaurant.meta_conversion_api_token) {
+      setImmediate(() => {
+        sendMetaLeadEvent({
+          pixelId: restaurant.facebook_pixel_id!,
+          accessToken: restaurant.meta_conversion_api_token!,
+          eventId: metaEventId,
+          eventSourceUrl: tracking?.event_source_url ?? undefined,
+          clientIpAddress: serverContext?.clientIp,
+          clientUserAgent: serverContext?.userAgent,
+          fbp: tracking?.fbp,
+          fbc: tracking?.fbc,
+          email: tracking?.email,
+          phone: tracking?.phone,
+          fullName: tracking?.full_name,
+          testEventCode: process.env.META_TEST_EVENT_CODE || undefined,
+        }).catch((err) =>
+          console.error('[MetaCAPI] Unhandled error sending Lead event:', err)
+        );
+      });
+    }
 
     return {
       ...reservation,

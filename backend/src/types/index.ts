@@ -104,6 +104,9 @@ export interface RestaurantResponseDTO {
   updated_date: Date;
 }
 
+/** Public-facing restaurant response — strips sensitive credentials */
+export type RestaurantPublicResponseDTO = Omit<RestaurantResponseDTO, 'meta_conversion_api_token'>;
+
 // Customer Types
 export interface CreateCustomerDTO {
   restaurant_id: string;
@@ -242,8 +245,20 @@ export interface ShiftResponseDTO {
 }
 
 // Reservation Types
+/** Tracking context forwarded from the browser to enrich the CAPI event */
+export interface MetaTrackingContext {
+  fbp?: string | null;
+  fbc?: string | null;
+  event_source_url?: string | null;
+  // Customer PII passed for hashing (never stored raw on the CAPI payload)
+  email?: string | null;
+  phone?: string | null;
+  full_name?: string | null;
+}
+
 export interface CreateReservationDTO {
   restaurant_id: string;
+  owner_email?: string;
   customer_id: string;
   date: Date;
   shift_id: string;
@@ -255,6 +270,8 @@ export interface CreateReservationDTO {
   status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   source: 'PHONE' | 'ONLINE';
   notes?: string;
+  /** Optional tracking context — present only on public (browser-originated) reservations */
+  _tracking?: MetaTrackingContext;
 }
 
 export interface UpdateReservationDTO {
@@ -287,6 +304,7 @@ export interface ReservationResponseDTO {
   status: string;
   source: string;
   notes: string | null;
+  meta_event_id: string | null;
   created_date: Date;
   updated_date: Date;
 }

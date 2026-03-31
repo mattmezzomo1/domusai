@@ -48,7 +48,18 @@ export class ReservationsController {
 
   // Public endpoint to create reservation (for public booking)
   createPublic = asyncHandler(async (req: Request, res: Response) => {
-    const reservation = await reservationsService.createPublic(req.body);
+    // Extract real client IP (respect reverse-proxy headers)
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      undefined;
+
+    const userAgent = req.headers['user-agent'] || undefined;
+
+    const reservation = await reservationsService.createPublic(req.body, {
+      clientIp,
+      userAgent,
+    });
     res.status(201).json(reservation);
   });
 

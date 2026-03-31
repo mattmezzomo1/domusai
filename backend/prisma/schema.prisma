@@ -181,6 +181,7 @@ model Reservation {
   status           ReservationStatus @default(PENDING)
   source           ReservationSource
   notes            String?           @db.Text
+  meta_event_id    String?           @db.VarChar(255)
   created_date     DateTime          @default(now())
   updated_date     DateTime          @updatedAt
   customer         Customer          @relation(fields: [customer_id], references: [id], onDelete: Cascade)

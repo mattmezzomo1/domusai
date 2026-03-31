@@ -312,8 +312,15 @@ export default function PublicBooking() {
       const mainTable = selectedTables[0];
       const tableIds = selectedTables.map(t => t.id);
 
+      // Build tracking context to forward to server for CAPI enrichment
+      const trackingContext = trackingService.buildTrackingContext({
+        email: finalData.email,
+        phone: finalData.phone_whatsapp,
+        fullName: finalData.full_name,
+      });
+
       // Use public endpoint to create reservation
-      await reservationService.createPublic({
+      const createdReservation = await reservationService.createPublic({
         restaurant_id: restaurant.id,
         owner_email: restaurant.owner_email,
         customer_id: customer.id,
@@ -327,18 +334,23 @@ export default function PublicBooking() {
         environment_id: finalData.environment_id || mainTable.environment_id || null,
         status: "PENDING", // Status em UPPERCASE
         notes: finalData.notes || `Mesas alocadas: ${selectedTables.map(t => t.name).join(', ')}`,
-        source: "online"
+        source: "online",
+        _tracking: trackingContext,
       });
 
       console.log("Reservation created successfully");
 
-      // Track completed reservation (Purchase/Lead)
-      trackingService.trackReservationComplete({
-        reservation_code: code,
-        party_size: finalData.party_size,
-        date: finalData.date,
-        slot_time: finalData.slot_time,
-      });
+      // Fire browser Pixel Lead event with the server-generated eventID for deduplication.
+      // The same eventID was already sent to CAPI server-side.
+      if (createdReservation?.meta_event_id) {
+        const nameParts = (finalData.full_name || '').trim().split(/\s+/);
+        trackingService.trackLeadEvent(createdReservation.meta_event_id, {
+          email: finalData.email || undefined,
+          phone: finalData.phone_whatsapp || undefined,
+          firstName: nameParts[0] || undefined,
+          lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined,
+        });
+      }
 
       // Atualizar bookingData com os dados do cliente para exibir na confirmação
       setBookingData(prev => ({
