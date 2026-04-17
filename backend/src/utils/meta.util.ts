@@ -84,6 +84,54 @@ export function hashLastName(fullName: string | null | undefined): string | null
 }
 
 /**
+ * Normalize a date of birth to Meta's required YYYYMMDD format.
+ * Accepts a Date, a YYYY-MM-DD ISO string, or a full ISO datetime string.
+ * Returns null for missing/invalid values.
+ */
+export function formatDateOfBirth(
+  value: Date | string | null | undefined
+): string | null {
+  if (!value) return null;
+
+  // If it's already a YYYYMMDD digit string, return as-is
+  if (typeof value === 'string' && /^\d{8}$/.test(value)) return value;
+
+  // Fast path for YYYY-MM-DD strings (avoid timezone shifts from new Date())
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}${match[2]}${match[3]}`;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return null;
+
+  const year = date.getUTCFullYear().toString().padStart(4, '0');
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = date.getUTCDate().toString().padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+/**
+ * Normalize and hash a date of birth (YYYYMMDD → SHA-256 hex).
+ */
+export function hashDateOfBirth(
+  value: Date | string | null | undefined
+): string | null {
+  const normalized = formatDateOfBirth(value);
+  if (!normalized) return null;
+  return createHash('sha256').update(normalized).digest('hex');
+}
+
+/**
+ * Hash an external identifier (reservation id, user id, etc.) with SHA-256.
+ * Per Meta CAPI spec, external_id should be trimmed + lowercased before hashing.
+ */
+export function hashExternalId(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return hashSHA256(value);
+}
+
+/**
  * Read a cookie value by name from a raw Cookie header string.
  * Used server-side when the cookie header is forwarded from the browser request.
  */

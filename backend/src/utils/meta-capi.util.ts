@@ -8,7 +8,14 @@
  */
 
 import { request } from 'https';
-import { hashEmail, hashPhone, hashFirstName, hashLastName } from './meta.util';
+import {
+  hashEmail,
+  hashPhone,
+  hashFirstName,
+  hashLastName,
+  hashDateOfBirth,
+  hashExternalId,
+} from './meta.util';
 
 export interface MetaCapiLeadPayload {
   pixelId: string;
@@ -22,6 +29,8 @@ export interface MetaCapiLeadPayload {
   email?: string | null;
   phone?: string | null;
   fullName?: string | null;
+  birthDate?: Date | string | null;  // YYYY-MM-DD or Date — hashed as YYYYMMDD for `db`
+  externalId?: string | null;        // Advertiser's unique id (e.g. reservation id) for `external_id`
   testEventCode?: string;    // For Meta Event Manager testing
 }
 
@@ -42,6 +51,8 @@ export async function sendMetaLeadEvent(payload: MetaCapiLeadPayload): Promise<v
     email,
     phone,
     fullName,
+    birthDate,
+    externalId,
     testEventCode,
   } = payload;
 
@@ -56,10 +67,14 @@ export async function sendMetaLeadEvent(payload: MetaCapiLeadPayload): Promise<v
   const ph = hashPhone(phone);
   const fn = hashFirstName(fullName);
   const ln = hashLastName(fullName);
+  const db = hashDateOfBirth(birthDate);
+  const extId = hashExternalId(externalId);
   if (em) userData.em = em;
   if (ph) userData.ph = ph;
   if (fn) userData.fn = fn;
   if (ln) userData.ln = ln;
+  if (db) userData.db = db;
+  if (extId) userData.external_id = extId;
   if (clientIpAddress) userData.client_ip_address = clientIpAddress;
   if (clientUserAgent) userData.client_user_agent = clientUserAgent;
   if (fbp) userData.fbp = fbp;

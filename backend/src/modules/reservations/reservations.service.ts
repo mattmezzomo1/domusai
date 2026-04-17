@@ -330,6 +330,8 @@ export class ReservationsService {
           email: tracking?.email,
           phone: tracking?.phone,
           fullName: tracking?.full_name,
+          birthDate: tracking?.birth_date,
+          externalId: reservation.id,
           testEventCode: process.env.META_TEST_EVENT_CODE || undefined,
         }).catch((err) =>
           console.error('[MetaCAPI] Unhandled error sending Lead event:', err)

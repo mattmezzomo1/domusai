@@ -239,9 +239,7 @@ export default function TrackingSettings() {
                 <strong>Eventos rastreados automaticamente:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                   <li><strong>ViewContent:</strong> Quando o cliente visualiza o formulário de reserva</li>
-                  <li><strong>AddToCart:</strong> Quando o cliente seleciona um horário</li>
-                  <li><strong>InitiateCheckout:</strong> Quando o cliente preenche dados pessoais</li>
-                  <li><strong>Purchase/Lead:</strong> Quando a reserva é concluída com sucesso</li>
+                  <li><strong>Lead:</strong> Quando a reserva é concluída com sucesso</li>
                 </ul>
               </AlertDescription>
             </Alert>

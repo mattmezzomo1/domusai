@@ -104,14 +104,44 @@ class TrackingService {
   }
 
   /**
+   * Format a date of birth to Meta's expected `db` format (YYYYMMDD).
+   * Accepts a Date, a YYYY-MM-DD string or any parseable date string.
+   * Returns null for missing/invalid values.
+   */
+  formatDateOfBirth(value) {
+    if (!value) return null;
+    if (typeof value === 'string' && /^\d{8}$/.test(value)) return value;
+
+    if (typeof value === 'string') {
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return `${match[1]}${match[2]}${match[3]}`;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const y = String(date.getUTCFullYear()).padStart(4, '0');
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(date.getUTCDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
+  }
+
+  /**
    * Track the Lead event on the browser Pixel with the server-generated eventID.
    *
    * This is the KEY deduplication step: the same `eventID` is sent by the
    * server to Meta CAPI. Meta uses this to deduplicate both events and count
    * only one conversion.
    *
+   * `external_id` and `db` are passed unhashed to fbq — the Pixel hashes them
+   * automatically for Advanced Matching. The CAPI counterpart hashes them
+   * with SHA-256 server-side.
+   *
    * @param {string} eventId  - UUID returned by the backend after reservation creation
    * @param {object} userData - Raw (unhashed) user data for Pixel Advanced Matching
+   *   - email, phone, firstName, lastName
+   *   - externalId: advertiser's unique id (reservation id)
+   *   - birthDate:  YYYY-MM-DD string or Date (converted to YYYYMMDD)
    */
   trackLeadEvent(eventId, userData = {}) {
     if (!this.initialized || !this.config.facebookPixelId) return;
@@ -126,6 +156,9 @@ class TrackingService {
     if (userData.phone) pixelUserData.ph = userData.phone;
     if (userData.firstName) pixelUserData.fn = userData.firstName;
     if (userData.lastName) pixelUserData.ln = userData.lastName;
+    if (userData.externalId) pixelUserData.external_id = userData.externalId;
+    const db = this.formatDateOfBirth(userData.birthDate);
+    if (db) pixelUserData.db = db;
 
     // fbq('track', eventName, customData, eventData)
     // eventData.eventID must match the server-side event_id for deduplication
@@ -139,40 +172,13 @@ class TrackingService {
   }
 
   /**
-   * Track booking step progression
+   * Track a ViewContent event — fired when the customer opens the reservation form.
    */
-  trackBookingStep(step, data) {
-    const stepEvents = {
-      1: { name: 'ViewContent', description: 'Viewed booking form - Step 1' },
-      2: { name: 'AddToCart', description: 'Selected time slot - Step 2' },
-      3: { name: 'InitiateCheckout', description: 'Entered personal info - Step 3' },
-    };
-
-    const event = stepEvents[step];
-    if (!event) return;
-
-    this.trackEvent(event.name, {
-      content_name: event.description,
+  trackViewContent(data = {}) {
+    this.trackEvent('ViewContent', {
+      content_name: 'Booking Form',
       content_category: 'Booking',
-      step: step,
       ...data,
-    });
-  }
-
-  /**
-   * @deprecated Use trackLeadEvent() instead for proper deduplication.
-   * Kept for backwards compatibility with non-Lead events.
-   */
-  trackReservationComplete(reservationData) {
-    this.trackEvent('Purchase', {
-      content_name: 'Reservation Completed',
-      content_category: 'Booking',
-      value: 0,
-      currency: 'BRL',
-      reservation_code: reservationData.reservation_code,
-      party_size: reservationData.party_size,
-      date: reservationData.date,
-      slot_time: reservationData.slot_time,
     });
   }
 
@@ -189,7 +195,7 @@ class TrackingService {
    * Build the tracking context object to include in the reservation creation request.
    * This data is forwarded to the backend which sends it to Meta CAPI.
    */
-  buildTrackingContext({ email, phone, fullName } = {}) {
+  buildTrackingContext({ email, phone, fullName, birthDate } = {}) {
     return {
       fbp: this.getCookie('_fbp'),
       fbc: this.getCookie('_fbc'),
@@ -197,6 +203,7 @@ class TrackingService {
       email: email || null,
       phone: phone || null,
       full_name: fullName || null,
+      birth_date: birthDate || null,
     };
   }
 

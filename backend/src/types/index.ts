@@ -254,6 +254,7 @@ export interface MetaTrackingContext {
   email?: string | null;
   phone?: string | null;
   full_name?: string | null;
+  birth_date?: string | null;  // YYYY-MM-DD — hashed server-side as `db` (YYYYMMDD)
 }
 
 export interface CreateReservationDTO {

@@ -93,6 +93,13 @@ export default function PublicBooking() {
     }
   }, [restaurant]);
 
+  // Fire Meta ViewContent once the customer opens the reservation form (step 1 of new booking)
+  useEffect(() => {
+    if (restaurant && currentView === "new" && step === 1) {
+      trackingService.trackViewContent();
+    }
+  }, [restaurant, currentView, step]);
+
   const handleHomeSelection = (view) => {
     setCurrentView(view);
     setError(null);
@@ -128,14 +135,6 @@ export default function PublicBooking() {
     console.log("Step 1 Complete - Data:", data);
     setBookingData({ ...bookingData, ...data });
 
-    // Track step 1 completion
-    trackingService.trackBookingStep(1, {
-      date: data.date,
-      party_size: data.party_size,
-      shift_id: data.shift_id,
-      environment_id: data.environment_id,
-    });
-
     // Sempre ir para step 2 (seleção de horário)
     setStep(2);
     setError(null);
@@ -146,13 +145,6 @@ export default function PublicBooking() {
 
     const updatedData = { ...bookingData, ...data };
     setBookingData(updatedData);
-
-    // Track step 2 completion
-    trackingService.trackBookingStep(2, {
-      slot_time: data.slot_time,
-      date: updatedData.date,
-      party_size: updatedData.party_size,
-    });
 
     setStep(3);
     setError(null);
@@ -167,13 +159,6 @@ export default function PublicBooking() {
     const finalData = { ...bookingData, ...data };
 
     console.log("Step 3 Complete - Final Data:", finalData);
-
-    // Track step 3 completion (InitiateCheckout)
-    trackingService.trackBookingStep(3, {
-      full_name: finalData.full_name,
-      email: finalData.email,
-      phone: finalData.phone_whatsapp,
-    });
 
     // Set user data for enhanced matching
     trackingService.setUserData({
@@ -317,6 +302,7 @@ export default function PublicBooking() {
         email: finalData.email,
         phone: finalData.phone_whatsapp,
         fullName: finalData.full_name,
+        birthDate: finalData.birth_date,
       });
 
       // Use public endpoint to create reservation
@@ -349,6 +335,8 @@ export default function PublicBooking() {
           phone: finalData.phone_whatsapp || undefined,
           firstName: nameParts[0] || undefined,
           lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined,
+          externalId: createdReservation.id || undefined,
+          birthDate: finalData.birth_date || undefined,
         });
       }
 
