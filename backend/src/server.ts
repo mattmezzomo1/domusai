@@ -13,6 +13,7 @@ import reservationsRoutes from './modules/reservations/reservations.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import paymentsRoutes from './modules/payments/payments.routes';
+import rhizoRoutes from './modules/rhizo/rhizo.routes';
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +60,7 @@ app.use('/api/reservations', reservationsRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/webhooks/rhizo', rhizoRoutes);
 
 // 404 handler
 app.use((_req, res) => {
