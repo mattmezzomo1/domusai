@@ -15,7 +15,7 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       try {
         const currentUser = await authService.me();
-        if (currentUser?.role !== 'admin') {
+        if (currentUser?.role !== 'ADMIN') {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
     queryFn: () => base44.asServiceRole.entities.Restaurant.list(),
   });
 
-  const activeSubscriptions = allSubscriptions.filter(s => s.status === 'active' || s.status === 'trial');
+  const activeSubscriptions = allSubscriptions.filter(s => s.status === 'ACTIVE' || s.status === 'TRIAL');
   const totalRevenue = activeSubscriptions.length * 197;
 
   const stats = [
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'admin' 
+                      user.role === 'ADMIN'
                         ? 'bg-purple-100 text-purple-800' 
                         : 'bg-gray-100 text-gray-800'
                     }`}>
@@ -147,9 +147,9 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500">{sub.plan_type}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      sub.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : sub.status === 'trial'
+                      sub.status === 'ACTIVE'
+                        ? 'bg-green-100 text-green-800'
+                        : sub.status === 'TRIAL'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-red-100 text-red-800'
                     }`}>

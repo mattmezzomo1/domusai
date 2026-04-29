@@ -47,8 +47,7 @@ export default function SubscriptionGuard({ children }) {
   });
 
   // Admin sempre tem acesso - verificar primeiro antes de loading
-  // Backend retorna role em UPPERCASE (ADMIN, USER)
-  if (user?.role === 'ADMIN' || user?.role === 'admin') {
+  if (user?.role === 'ADMIN') {
     console.log('✅ Admin detected, bypassing subscription check');
     return children;
   }
@@ -70,11 +69,15 @@ export default function SubscriptionGuard({ children }) {
     );
   }
 
-  // Verificar se tem assinatura ativa
+  // Verificar se tem assinatura ativa e dentro da validade
   // Backend retorna status em UPPERCASE (ACTIVE, TRIAL, CANCELLED, PAST_DUE)
-  const hasActiveSubscription = subscription &&
-    (subscription.status === 'ACTIVE' || subscription.status === 'active' ||
-     subscription.status === 'TRIAL' || subscription.status === 'trial');
+  const isStatusValid = subscription &&
+    (subscription.status === 'ACTIVE' || subscription.status === 'TRIAL');
+  const periodEnd = subscription?.current_period_end
+    ? new Date(subscription.current_period_end)
+    : null;
+  const isWithinPeriod = periodEnd ? periodEnd.getTime() > Date.now() : false;
+  const hasActiveSubscription = isStatusValid && isWithinPeriod;
 
   console.log('🔐 Subscription check:', { hasActiveSubscription, subscription });
 

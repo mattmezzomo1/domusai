@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { functionsService } from "@/services/api.service";
+import { functionsService, userService, subscriptionService } from "@/services/api.service";
+import { authService } from "@/services/auth.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Mail, Shield, Gift, Percent, Ban, RefreshCw, MoreVertical, CreditCard } from "lucide-react";
+import { Search, Mail, Shield, Gift, Percent, Ban, RefreshCw, MoreVertical, CreditCard, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import DiscountCodeDialog from "@/components/admin/DiscountCodeDialog";
+import NewUserDialog from "@/components/admin/NewUserDialog";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
+  const [showNewUserDialog, setShowNewUserDialog] = useState(false);
   const [user, setUser] = React.useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const queryClient = useQueryClient();
@@ -27,8 +30,8 @@ export default function AdminUsers() {
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await base44.auth.me();
-        if (currentUser?.role !== 'admin') {
+        const currentUser = await authService.me();
+        if (currentUser?.role !== 'ADMIN') {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -44,18 +47,14 @@ export default function AdminUsers() {
 
   const { data: users = [], isLoading: isLoadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ['admin-all-users'],
-    queryFn: async () => {
-      const result = await base44.asServiceRole.entities.User.list('-created_date');
-      console.log('Usuários carregados:', result);
-      return result;
-    },
-    enabled: !isCheckingAuth && user?.role === 'admin',
+    queryFn: () => userService.list(),
+    enabled: !isCheckingAuth && user?.role === 'ADMIN',
   });
 
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['admin-all-subscriptions'],
-    queryFn: () => base44.asServiceRole.entities.Subscription.list(),
-    enabled: !isCheckingAuth && user?.role === 'admin',
+    queryFn: () => subscriptionService.list(),
+    enabled: !isCheckingAuth && user?.role === 'ADMIN',
   });
 
   const grantFreePlanMutation = useMutation({
@@ -154,7 +153,7 @@ export default function AdminUsers() {
               <p className="text-xs md:text-sm text-gray-500">Visualize e gerencie todos os usuários da plataforma</p>
             </div>
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={() => refetchUsers()}
                 variant="outline"
                 disabled={isLoadingUsers}
@@ -162,7 +161,14 @@ export default function AdminUsers() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Button 
+              <Button
+                onClick={() => setShowNewUserDialog(true)}
+                className="bg-gradient-to-r from-purple-600 to-purple-700"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Usuário
+              </Button>
+              <Button
                 onClick={() => setShowDiscountDialog(true)}
                 className="bg-gradient-to-r from-green-600 to-green-700"
               >
@@ -232,8 +238,8 @@ export default function AdminUsers() {
                     
                     <div className="flex flex-wrap gap-2 items-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'admin' 
-                          ? 'bg-purple-100 text-purple-800' 
+                        user.role === 'ADMIN'
+                          ? 'bg-purple-100 text-purple-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
                         <Shield className="w-3 h-3 inline mr-1" />
@@ -243,9 +249,9 @@ export default function AdminUsers() {
                       {subscription ? (
                         <>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            subscription.status === 'active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : subscription.status === 'trial'
+                            subscription.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : subscription.status === 'TRIAL'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
@@ -256,7 +262,7 @@ export default function AdminUsers() {
                               {subscription.plan_type}
                             </span>
                           )}
-                          {user.role !== 'admin' && (
+                          {user.role !== 'ADMIN' && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button size="sm" variant="outline">
@@ -264,13 +270,13 @@ export default function AdminUsers() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {subscription.plan_type === 'domus_free' && (
+                                {subscription.plan_type === 'DOMUS_FREE' && (
                                   <DropdownMenuItem onClick={() => handleUpgradeToPaid(user.email)}>
                                     <CreditCard className="w-4 h-4 mr-2" />
                                     Alterar para Pago
                                   </DropdownMenuItem>
                                 )}
-                                {subscription.plan_type === 'domus_paid' && (
+                                {subscription.plan_type === 'DOMUS_PAID' && (
                                   <DropdownMenuItem onClick={() => handleGrantFreePlan(user.email)}>
                                     <Gift className="w-4 h-4 mr-2" />
                                     Alterar para Free
@@ -280,7 +286,7 @@ export default function AdminUsers() {
                                   <Percent className="w-4 h-4 mr-2" />
                                   Criar Desconto
                                 </DropdownMenuItem>
-                                {subscription.status === 'active' && (
+                                {subscription.status === 'ACTIVE' && (
                                   <DropdownMenuItem 
                                     onClick={() => handleRevokeAccess(user.email)}
                                     className="text-red-600"
@@ -294,7 +300,7 @@ export default function AdminUsers() {
                           )}
                         </>
                       ) : (
-                        user.role !== 'admin' && (
+                        user.role !== 'ADMIN' && (
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -317,10 +323,19 @@ export default function AdminUsers() {
         </Card>
       </div>
 
-      <DiscountCodeDialog 
+      <DiscountCodeDialog
         open={showDiscountDialog}
         onOpenChange={setShowDiscountDialog}
         onSuccess={() => {}}
+      />
+
+      <NewUserDialog
+        open={showNewUserDialog}
+        onOpenChange={setShowNewUserDialog}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-all-subscriptions'] });
+        }}
       />
     </div>
   );

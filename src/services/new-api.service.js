@@ -240,6 +240,33 @@ export const newShiftService = {
 };
 
 /**
+ * Service para gerenciar Users (admin only)
+ */
+export const newUserService = {
+  list: async (filters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get(`/users${queryString}`);
+  },
+
+  filter: async (filters = {}, sort = {}) => {
+    const allFilters = { ...filters, ...sort };
+    return newUserService.list(allFilters);
+  },
+
+  getById: async (id) => {
+    return apiClient.get(`/users/${id}`);
+  },
+
+  invite: async (data) => {
+    return apiClient.post('/users/invite', data);
+  },
+
+  delete: async (id) => {
+    return apiClient.delete(`/users/${id}`);
+  }
+};
+
+/**
  * Service para gerenciar Subscriptions
  */
 export const newSubscriptionService = {

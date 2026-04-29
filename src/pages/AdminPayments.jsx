@@ -20,11 +20,11 @@ export default function AdminPayments() {
   );
 
   const totalRevenue = subscriptions
-    .filter(s => s.status === 'active')
+    .filter(s => s.status === 'ACTIVE')
     .length * 197;
 
   const monthlyRecurring = subscriptions
-    .filter(s => s.status === 'active' || s.status === 'trial')
+    .filter(s => s.status === 'ACTIVE' || s.status === 'TRIAL')
     .length * 197;
 
   return (
@@ -122,17 +122,17 @@ export default function AdminPayments() {
                   
                   <div className="flex flex-col items-end gap-2 mt-3 md:mt-0">
                     <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                      sub.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : sub.status === 'trial'
+                      sub.status === 'ACTIVE'
+                        ? 'bg-green-100 text-green-800'
+                        : sub.status === 'TRIAL'
                         ? 'bg-blue-100 text-blue-800'
-                        : sub.status === 'cancelled'
+                        : sub.status === 'CANCELLED'
                         ? 'bg-orange-100 text-orange-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
                       {sub.status}
                     </span>
-                    {sub.status === 'active' && (
+                    {sub.status === 'ACTIVE' && (
                       <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
                         <DollarSign className="w-4 h-4" />
                         R$ 197/mês

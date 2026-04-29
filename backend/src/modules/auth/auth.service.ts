@@ -25,15 +25,38 @@ export class AuthService {
     // Hash password
     const hashedPassword = await hashPassword(data.password);
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-        full_name: data.full_name,
-        role: data.role || 'USER',
-        avatar_url: data.avatar_url,
-      },
+    // Create user + 14-day trial subscription atomically.
+    // Admins da plataforma não recebem trial — têm acesso total via role.
+    const role = data.role || 'USER';
+    const trialStart = new Date();
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 14);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: data.email,
+          password: hashedPassword,
+          full_name: data.full_name,
+          role,
+          avatar_url: data.avatar_url,
+        },
+      });
+
+      if (role !== 'ADMIN') {
+        await tx.subscription.create({
+          data: {
+            user_email: created.email,
+            plan_type: 'DOMUS_FREE',
+            status: 'TRIAL',
+            current_period_start: trialStart,
+            current_period_end: trialEnd,
+            updated_date: new Date(),
+          },
+        });
+      }
+
+      return created;
     });
 
     // Generate token

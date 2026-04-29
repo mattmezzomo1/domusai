@@ -10,7 +10,7 @@ const DEFAULT_MOCK_USER = {
   id: 'user_mock_001',
   email: 'admin@domus.com',
   full_name: 'Admin Domus',
-  role: 'admin',
+  role: 'ADMIN',
   created_date: new Date('2024-01-01').toISOString(),
   avatar_url: null
 };

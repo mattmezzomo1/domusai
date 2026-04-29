@@ -216,7 +216,7 @@ export default function Layout({ children, currentPageName }) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {user?.role === 'admin' && (
+            {user?.role === 'ADMIN' && (
               <SidebarGroup className="mt-4">
                 {sidebarOpen && (
                   <SidebarGroupLabel className="text-xs font-semibold text-purple-600 uppercase tracking-wider px-3 py-2">

@@ -14,7 +14,8 @@ import {
   newSubscriptionService,
   newEnvironmentService,
   newFunctionsService,
-  newPaymentService
+  newPaymentService,
+  newUserService
 } from './new-api.service';
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
@@ -267,6 +268,41 @@ export const shiftService = {
     if (USE_MOCK) return mockDataService.shifts.delete(id);
     if (USE_NEW_API) return newShiftService.delete(id);
     return base44.entities.Shift.delete(id);
+  }
+};
+
+/**
+ * Service para gerenciar Users (admin only)
+ */
+export const userService = {
+  list: async (filters) => {
+    if (USE_MOCK) return mockDataService.users?.list?.() || [];
+    if (USE_NEW_API) return newUserService.list(filters);
+    return base44.entities.User.list();
+  },
+
+  filter: async (filters, sort) => {
+    if (USE_MOCK) return mockDataService.users?.filter?.(filters, sort) || [];
+    if (USE_NEW_API) return newUserService.filter(filters, sort);
+    return base44.entities.User.filter(filters, sort);
+  },
+
+  getById: async (id) => {
+    if (USE_MOCK) return mockDataService.users?.getById?.(id) || null;
+    if (USE_NEW_API) return newUserService.getById(id);
+    return base44.entities.User.get(id);
+  },
+
+  invite: async (data) => {
+    if (USE_MOCK) return mockDataService.users?.invite?.(data) || data;
+    if (USE_NEW_API) return newUserService.invite(data);
+    return base44.entities.User.create(data);
+  },
+
+  delete: async (id) => {
+    if (USE_MOCK) return mockDataService.users?.delete?.(id);
+    if (USE_NEW_API) return newUserService.delete(id);
+    return base44.entities.User.delete(id);
   }
 };
 

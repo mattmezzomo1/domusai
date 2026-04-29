@@ -328,21 +328,21 @@ export default function ProfilePage() {
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            {subscription.plan_type === 'domus_paid' ? 'Plano Premium' : 'Plano Gratuito'}
-                            {subscription.status === 'active' && (
+                            {subscription.plan_type === 'DOMUS_PAID' ? 'Plano Premium' : 'Plano Gratuito'}
+                            {subscription.status === 'ACTIVE' && (
                               <CheckCircle className="w-5 h-5 text-green-600" />
                             )}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
                             Status: <span className="font-medium capitalize">{
-                              subscription.status === 'active' ? 'Ativo' :
-                              subscription.status === 'trial' ? 'Trial' :
-                              subscription.status === 'cancelled' ? 'Cancelado' :
-                              subscription.status === 'expired' ? 'Expirado' : subscription.status
+                              subscription.status === 'ACTIVE' ? 'Ativo' :
+                              subscription.status === 'TRIAL' ? 'Trial' :
+                              subscription.status === 'CANCELLED' ? 'Cancelado' :
+                              subscription.status === 'EXPIRED' ? 'Expirado' : subscription.status
                             }</span>
                           </p>
                         </div>
-                        {subscription.plan_type === 'domus_paid' && subscription.status === 'active' && (
+                        {subscription.plan_type === 'DOMUS_PAID' && subscription.status === 'ACTIVE' && (
                           <Crown className="w-8 h-8 text-amber-500" />
                         )}
                       </div>
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      {subscription.plan_type === 'domus_paid' ? (
+                      {subscription.plan_type === 'DOMUS_PAID' ? (
                         <div className="mt-6 pt-6 border-t border-amber-200">
                           <h4 className="font-semibold mb-3">Recursos Inclusos:</h4>
                           <ul className="space-y-2 text-sm text-gray-700">
@@ -394,7 +394,7 @@ export default function ProfilePage() {
                       )}
                     </div>
 
-                    {subscription.plan_type === 'domus_paid' && subscription.status === 'active' && (
+                    {subscription.plan_type === 'DOMUS_PAID' && subscription.status === 'ACTIVE' && (
                       <div className="space-y-3">
                         <Button 
                           variant="outline" 

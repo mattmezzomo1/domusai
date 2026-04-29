@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { authService } from "@/services/auth.service";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ShieldAlert } from "lucide-react";
@@ -12,14 +12,14 @@ export default function AdminGuard({ children }) {
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await authService.me();
         
         if (!currentUser) {
           navigate(createPageUrl("Dashboard"));
           return;
         }
 
-        if (currentUser.role !== 'admin') {
+        if (currentUser.role !== 'ADMIN') {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -47,7 +47,7 @@ export default function AdminGuard({ children }) {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== 'ADMIN') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50/30 p-4">
         <div className="text-center max-w-md">

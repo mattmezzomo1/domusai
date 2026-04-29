@@ -73,8 +73,8 @@ export default function PlansPage() {
     }
   };
 
-  const hasActiveSubscription = subscription && 
-    (subscription.status === 'active' || subscription.status === 'trial');
+  const hasActiveSubscription = subscription &&
+    (subscription.status === 'ACTIVE' || subscription.status === 'TRIAL');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-amber-50/30 p-6">
