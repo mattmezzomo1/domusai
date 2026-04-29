@@ -17,6 +17,7 @@ import DiscountCodeDialog from "@/components/admin/DiscountCodeDialog";
 import NewUserDialog from "@/components/admin/NewUserDialog";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { isAdmin } from "@/lib/utils";
 
 export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,7 +32,7 @@ export default function AdminUsers() {
     const checkAuth = async () => {
       try {
         const currentUser = await authService.me();
-        if (currentUser?.role !== 'ADMIN') {
+        if (!isAdmin(currentUser)) {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -48,13 +49,13 @@ export default function AdminUsers() {
   const { data: users = [], isLoading: isLoadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ['admin-all-users'],
     queryFn: () => userService.list(),
-    enabled: !isCheckingAuth && user?.role === 'ADMIN',
+    enabled: !isCheckingAuth && isAdmin(user),
   });
 
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['admin-all-subscriptions'],
     queryFn: () => subscriptionService.list(),
-    enabled: !isCheckingAuth && user?.role === 'ADMIN',
+    enabled: !isCheckingAuth && isAdmin(user),
   });
 
   const grantFreePlanMutation = useMutation({
@@ -238,12 +239,12 @@ export default function AdminUsers() {
                     
                     <div className="flex flex-wrap gap-2 items-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'ADMIN'
+                        isAdmin(user)
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
                         <Shield className="w-3 h-3 inline mr-1" />
-                        {user.role}
+                        {String(user.role || '').toUpperCase()}
                       </span>
                       
                       {subscription ? (
@@ -262,7 +263,7 @@ export default function AdminUsers() {
                               {subscription.plan_type}
                             </span>
                           )}
-                          {user.role !== 'ADMIN' && (
+                          {!isAdmin(user) && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button size="sm" variant="outline">
@@ -300,8 +301,8 @@ export default function AdminUsers() {
                           )}
                         </>
                       ) : (
-                        user.role !== 'ADMIN' && (
-                          <Button 
+                        !isAdmin(user) && (
+                          <Button
                             size="sm" 
                             variant="outline"
                             className="border-green-600 text-green-600 hover:bg-green-50"

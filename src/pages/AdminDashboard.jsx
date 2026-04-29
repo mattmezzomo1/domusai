@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, CreditCard, Building2, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { isAdmin } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const [user, setUser] = React.useState(null);
@@ -15,7 +16,7 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       try {
         const currentUser = await authService.me();
-        if (currentUser?.role !== 'ADMIN') {
+        if (!isAdmin(currentUser)) {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -122,11 +123,11 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'ADMIN'
-                        ? 'bg-purple-100 text-purple-800' 
+                      isAdmin(user)
+                        ? 'bg-purple-100 text-purple-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {user.role}
+                      {String(user.role || '').toUpperCase()}
                     </span>
                   </div>
                 ))}

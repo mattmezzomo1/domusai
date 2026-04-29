@@ -7,6 +7,7 @@ import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CreditCard } from "lucide-react";
+import { isAdmin } from "@/lib/utils";
 
 export default function SubscriptionGuard({ children }) {
   const [user, setUser] = useState(null);
@@ -47,7 +48,7 @@ export default function SubscriptionGuard({ children }) {
   });
 
   // Admin sempre tem acesso - verificar primeiro antes de loading
-  if (user?.role === 'ADMIN') {
+  if (isAdmin(user)) {
     console.log('✅ Admin detected, bypassing subscription check');
     return children;
   }

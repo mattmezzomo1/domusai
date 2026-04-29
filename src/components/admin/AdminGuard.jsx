@@ -3,6 +3,7 @@ import { authService } from "@/services/auth.service";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ShieldAlert } from "lucide-react";
+import { isAdmin } from "@/lib/utils";
 
 export default function AdminGuard({ children }) {
   const [user, setUser] = useState(null);
@@ -19,7 +20,7 @@ export default function AdminGuard({ children }) {
           return;
         }
 
-        if (currentUser.role !== 'ADMIN') {
+        if (!isAdmin(currentUser)) {
           navigate(createPageUrl("Dashboard"));
           return;
         }
@@ -47,7 +48,7 @@ export default function AdminGuard({ children }) {
     );
   }
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !isAdmin(user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50/30 p-4">
         <div className="text-center max-w-md">

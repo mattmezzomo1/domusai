@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import SubscriptionGuard from "@/components/subscription/SubscriptionGuard";
+import { isAdmin } from "@/lib/utils";
 
 const userNavigationItems = [
   {
@@ -216,7 +217,7 @@ export default function Layout({ children, currentPageName }) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {user?.role === 'ADMIN' && (
+            {isAdmin(user) && (
               <SidebarGroup className="mt-4">
                 {sidebarOpen && (
                   <SidebarGroupLabel className="text-xs font-semibold text-purple-600 uppercase tracking-wider px-3 py-2">
