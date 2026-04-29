@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { subscriptionService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ export default function AdminPayments() {
 
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['admin-payments'],
-    queryFn: () => base44.asServiceRole.entities.Subscription.list('-created_date'),
+    queryFn: () => subscriptionService.list(),
   });
 
   const filteredSubscriptions = subscriptions.filter(sub => 

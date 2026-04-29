@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
+import { userService, subscriptionService, restaurantService } from "@/services/api.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, CreditCard, Building2, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -31,17 +32,20 @@ export default function AdminDashboard() {
   }, [navigate]);
   const { data: allUsers = [] } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: () => base44.asServiceRole.entities.User.list(),
+    queryFn: () => userService.list(),
+    enabled: !isCheckingAuth && isAdmin(user),
   });
 
   const { data: allSubscriptions = [] } = useQuery({
     queryKey: ['admin-subscriptions'],
-    queryFn: () => base44.asServiceRole.entities.Subscription.list(),
+    queryFn: () => subscriptionService.list(),
+    enabled: !isCheckingAuth && isAdmin(user),
   });
 
   const { data: allRestaurants = [] } = useQuery({
     queryKey: ['admin-restaurants'],
-    queryFn: () => base44.asServiceRole.entities.Restaurant.list(),
+    queryFn: () => restaurantService.list(),
+    enabled: !isCheckingAuth && isAdmin(user),
   });
 
   const activeSubscriptions = allSubscriptions.filter(s => s.status === 'ACTIVE' || s.status === 'TRIAL');

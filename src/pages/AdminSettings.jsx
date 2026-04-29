@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Key, Mail } from "lucide-react";
+import { Settings, Key, Mail } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 
 export default function AdminSettings() {
@@ -15,26 +15,6 @@ export default function AdminSettings() {
         </div>
 
         <div className="space-y-3 md:space-y-4">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Database className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <CardTitle>Banco de Dados</CardTitle>
-                  <CardDescription>Gerenciar entidades e dados</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Acesse o dashboard da Base44 para gerenciar entidades, visualizar logs e configurar regras de acesso.
-              </p>
-              <Button variant="outline">Abrir Dashboard Base44</Button>
-            </CardContent>
-          </Card>
-
           <Card className="shadow-lg">
             <CardHeader>
               <div className="flex items-center gap-3">
