@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import subscriptionsService from './subscriptions.service';
-import { asyncHandler } from '../../middleware/error.middleware';
+import { AppError, asyncHandler } from '../../middleware/error.middleware';
 
 export class SubscriptionsController {
   create = asyncHandler(async (req: Request, res: Response) => {
@@ -21,6 +21,14 @@ export class SubscriptionsController {
 
   findByUserEmail = asyncHandler(async (req: Request, res: Response) => {
     const email = req.params.email as string;
+
+    const isOwnSubscription = req.user?.email?.toLowerCase() === email.toLowerCase();
+    const isAdmin = String(req.user?.role || '').toUpperCase() === 'ADMIN';
+
+    if (!isOwnSubscription && !isAdmin) {
+      throw new AppError('Access denied', 403);
+    }
+
     const subscription = await subscriptionsService.findByUserEmail(email);
     res.json(subscription);
   });

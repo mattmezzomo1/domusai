@@ -31,8 +31,7 @@ export default function SubscriptionGuard({ children }) {
     queryKey: ['user-subscription', user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
-      const subs = await subscriptionService.filter({ user_email: user.email });
-      return subs.length > 0 ? subs[0] : null;
+      return subscriptionService.getByUserEmail(user.email);
     },
     enabled: !!user?.email,
   });

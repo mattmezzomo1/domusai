@@ -316,6 +316,16 @@ export const subscriptionService = {
     return base44.entities.Subscription.list();
   },
 
+  getByUserEmail: async (email) => {
+    if (USE_MOCK) {
+      const subs = await mockDataService.subscriptions.filter({ user_email: email });
+      return subs.length > 0 ? subs[0] : null;
+    }
+    if (USE_NEW_API) return newSubscriptionService.getByUserEmail(email);
+    const subs = await base44.entities.Subscription.filter({ user_email: email });
+    return subs.length > 0 ? subs[0] : null;
+  },
+
   filter: async (filters, sort) => {
     if (USE_MOCK) return mockDataService.subscriptions.filter(filters, sort);
     if (USE_NEW_API) return newSubscriptionService.filter(filters, sort);
