@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Calendar, Users, Clock, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,46 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
   const [partySize, setPartySize] = useState(formData.party_size || "");
   const [selectedShift, setSelectedShift] = useState(formData.shift_id || "");
   const [selectedEnvironment, setSelectedEnvironment] = useState(formData.environment_id || "");
+
+  const getLocalDayOfWeek = (dateString) => {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day).getDay();
+  };
+
+  const parseShiftDays = (daysOfWeek) => {
+    if (!daysOfWeek) return [];
+    if (Array.isArray(daysOfWeek)) return daysOfWeek.map(Number);
+    try {
+      const parsed = JSON.parse(daysOfWeek);
+      return Array.isArray(parsed) ? parsed.map(Number) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const getShiftDisplayName = (shift) => {
+    const startHour = Number(String(shift.start_time || '00:00').split(':')[0]);
+    return startHour < 16 ? 'Almoço' : 'Jantar';
+  };
+
+  const availableShifts = useMemo(() => {
+    const selectedDay = getLocalDayOfWeek(selectedDate);
+    if (selectedDay === null) return [];
+
+    return (shifts || []).filter((shift) => {
+      if (shift.active === false) return false;
+      const days = parseShiftDays(shift.days_of_week);
+      return days.includes(selectedDay);
+    });
+  }, [selectedDate, shifts]);
+
+  useEffect(() => {
+    if (selectedShift && !availableShifts.some((shift) => shift.id === selectedShift)) {
+      setSelectedShift("");
+    }
+  }, [availableShifts, selectedShift]);
 
   const handleContinue = () => {
     if (!selectedDate || !partySize || !selectedShift) {
@@ -130,14 +170,23 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
       )}
 
       {/* Shift Selection */}
-      {shifts && shifts.length > 0 && (
-        <div className="space-y-3">
-          <Label className="text-white text-sm font-medium flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#C47B3C]" />
-            Turno
-          </Label>
+      <div className="space-y-3">
+        <Label className="text-white text-sm font-medium flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#C47B3C]" />
+          Turno
+        </Label>
+
+        {!selectedDate ? (
+          <p className="text-sm text-[#AAAAAA] bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg p-4">
+            Selecione a data da reserva para ver os turnos disponíveis.
+          </p>
+        ) : availableShifts.length === 0 ? (
+          <p className="text-sm text-[#AAAAAA] bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg p-4">
+            Nenhum turno disponível para a data selecionada.
+          </p>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {shifts.map((shift) => {
+            {availableShifts.map((shift) => {
               const isSelected = selectedShift === shift.id;
               return (
                 <button
@@ -150,7 +199,7 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
                   }`}
                 >
                   <div className={`font-semibold mb-1 ${isSelected ? 'text-white' : 'text-white'}`}>
-                    {shift.name}
+                    {getShiftDisplayName(shift)}
                   </div>
                   <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-[#AAAAAA]'}`}>
                     {shift.start_time} - {shift.end_time}
@@ -159,8 +208,8 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <button
         onClick={handleContinue}

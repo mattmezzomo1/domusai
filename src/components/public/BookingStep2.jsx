@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 
 export default function BookingStep2({ restaurant, shifts, initialData, onComplete, onBack }) {
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -18,12 +17,15 @@ export default function BookingStep2({ restaurant, shifts, initialData, onComple
         const startTime = selectedShift.start_time.split(':');
         const endTime = selectedShift.end_time.split(':');
         const startMinutes = parseInt(startTime[0]) * 60 + parseInt(startTime[1]);
-        const endMinutes = parseInt(endTime[0]) * 60 + parseInt(endTime[1]);
+        let endMinutes = parseInt(endTime[0]) * 60 + parseInt(endTime[1]);
+        if (endMinutes <= startMinutes) {
+          endMinutes += 24 * 60;
+        }
         const interval = selectedShift.slot_interval_minutes || 15;
 
         const slots = [];
         for (let minutes = startMinutes; minutes <= endMinutes - interval; minutes += interval) {
-          const hours = Math.floor(minutes / 60);
+          const hours = Math.floor(minutes / 60) % 24;
           const mins = minutes % 60;
           const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
           slots.push(timeStr);

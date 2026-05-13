@@ -51,7 +51,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminPayments from './pages/AdminPayments';
 import AdminSettings from './pages/AdminSettings';
 import AdminUsers from './pages/AdminUsers';
-import BookingPublic from './pages/BookingPublic';
+import BookingPublic from './pages/PublicBooking';
 import CustomerDetail from './pages/CustomerDetail';
 import Customers from './pages/Customers';
 import Dashboard from './pages/Dashboard';

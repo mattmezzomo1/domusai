@@ -239,9 +239,10 @@ export default function PublicBooking() {
         shift_id: finalData.shift_id
       });
       
-      const existingReservations = allReservations.filter(r => 
-        r.status === "confirmed" || r.status === "pending"
-      );
+      const existingReservations = allReservations.filter((reservation) => {
+        const status = String(reservation.status || '').toUpperCase();
+        return status === "CONFIRMED" || status === "PENDING";
+      });
       
       console.log('📊 Reservas ativas no dia/turno:', existingReservations.length);
 
