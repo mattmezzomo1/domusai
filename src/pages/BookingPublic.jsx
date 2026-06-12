@@ -9,6 +9,7 @@ import BookingStep2 from "../components/public/BookingStep2";
 import BookingStep3 from "../components/public/BookingStep3";
 import BookingConfirmation from "../components/public/BookingConfirmation";
 import ManageReservation from "../components/public/ManageReservation";
+import { toDateOnly } from "@/lib/date-utils";
 
 export default function BookingPublic() {
   const [currentView, setCurrentView] = useState("home");
@@ -243,9 +244,10 @@ export default function BookingPublic() {
         shift_id: finalData.shift_id
       });
       
-      const existingReservations = allReservations.filter(r => 
-        r.status === "confirmed" || r.status === "pending"
-      );
+      const existingReservations = allReservations.filter(r => {
+        const status = String(r.status || '').toUpperCase();
+        return status === "CONFIRMED" || status === "PENDING";
+      });
       
       console.log('📊 Total reservas:', allReservations.length, '| Ativas:', existingReservations.length);
 
@@ -296,13 +298,12 @@ export default function BookingPublic() {
       const mainTable = selectedTables[0];
       const tableIds = selectedTables.map(t => t.id);
 
-      // Criar reserva com data em formato ISO-8601
       await reservationService.create({
         restaurant_id: restaurant.id,
         owner_email: restaurant.owner_email,
         customer_id: customer[0].id,
         reservation_code: code,
-        date: new Date(finalData.date).toISOString(), // Converter para ISO-8601
+        date: toDateOnly(finalData.date),
         shift_id: finalData.shift_id,
         slot_time: finalData.slot_time,
         party_size: parseInt(finalData.party_size),

@@ -3,8 +3,17 @@ import prisma from '../../utils/db';
 import { AppError } from '../../middleware/error.middleware';
 import { CreateReservationDTO, UpdateReservationDTO, ReservationResponseDTO, FilterParams } from '../../types';
 import { sendMetaLeadEvent } from '../../utils/meta-capi.util';
+import { toPrismaDateOnly } from '../../utils/date.util';
 
 export class ReservationsService {
+  private normalizeReservationDate(value: Date | string | null | undefined): Date {
+    const date = toPrismaDateOnly(value);
+    if (!date) {
+      throw new AppError('Invalid reservation date', 400);
+    }
+    return date;
+  }
+
   private generateReservationCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
@@ -42,7 +51,7 @@ export class ReservationsService {
         owner_email: ownerEmail,
         customer_id: data.customer_id,
         reservation_code: reservationCode,
-        date: data.date,
+        date: this.normalizeReservationDate(data.date),
         shift_id: data.shift_id,
         slot_time: data.slot_time,
         party_size: data.party_size,
@@ -71,7 +80,7 @@ export class ReservationsService {
     if (filters?.customer_id) where.customer_id = filters.customer_id;
     // Convert status to UPPERCASE to match enum ReservationStatus (PENDING, CONFIRMED, CANCELLED, COMPLETED)
     if (filters?.status) where.status = filters.status.toUpperCase();
-    if (filters?.date) where.date = new Date(filters.date as string);
+    if (filters?.date) where.date = this.normalizeReservationDate(filters.date as string);
     if (filters?.shift_id) where.shift_id = filters.shift_id;
 
     const reservations = await prisma.reservation.findMany({
@@ -137,8 +146,7 @@ export class ReservationsService {
     const customerIds = customers.map(c => c.id);
 
     // Find all future reservations for these customers
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.normalizeReservationDate(new Date());
 
     const reservations = await prisma.reservation.findMany({
       where: {
@@ -173,6 +181,7 @@ export class ReservationsService {
     if (updateData.status) updateData.status = updateData.status.toUpperCase();
     if (updateData.source) updateData.source = updateData.source.toUpperCase();
     if (updateData.linked_tables) updateData.linked_tables = JSON.stringify(updateData.linked_tables);
+    if (updateData.date) updateData.date = this.normalizeReservationDate(updateData.date);
 
     console.log('📝 Atualizando reserva pública:', {
       id,
@@ -212,6 +221,7 @@ export class ReservationsService {
     if (updateData.status) updateData.status = updateData.status.toUpperCase();
     if (updateData.source) updateData.source = updateData.source.toUpperCase();
     if (updateData.linked_tables) updateData.linked_tables = JSON.stringify(updateData.linked_tables);
+    if (updateData.date) updateData.date = this.normalizeReservationDate(updateData.date);
 
     const updated = await prisma.reservation.update({
       where: { id },
@@ -244,7 +254,7 @@ export class ReservationsService {
     if (filters?.customer_id) where.customer_id = filters.customer_id;
     // Convert status to UPPERCASE to match enum ReservationStatus (PENDING, CONFIRMED, CANCELLED, COMPLETED)
     if (filters?.status) where.status = filters.status.toUpperCase();
-    if (filters?.date) where.date = new Date(filters.date as string);
+    if (filters?.date) where.date = this.normalizeReservationDate(filters.date as string);
     if (filters?.shift_id) where.shift_id = filters.shift_id;
 
     const reservations = await prisma.reservation.findMany({
@@ -299,7 +309,7 @@ export class ReservationsService {
         owner_email: restaurant.owner_email,
         customer_id: data.customer_id,
         reservation_code: reservationCode,
-        date: data.date,
+        date: this.normalizeReservationDate(data.date),
         shift_id: data.shift_id,
         slot_time: data.slot_time,
         party_size: data.party_size,
@@ -347,4 +357,3 @@ export class ReservationsService {
 }
 
 export default new ReservationsService();
-

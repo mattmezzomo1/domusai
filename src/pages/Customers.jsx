@@ -17,6 +17,8 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import WhatsAppButton from "../components/shared/WhatsAppButton";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { buildWhatsAppMessage, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp-message";
+import { formatDateOnlyBR, getTodayDateOnly } from "@/lib/date-utils";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,9 +36,12 @@ export default function Customers() {
   const selectedRestaurant = restaurants[0];
 
   // Helper function to format WhatsApp message
-  const formatWhatsAppMessage = (customerName) => {
-    const template = selectedRestaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
-    return template.replace(/{nome}/g, customerName);
+  const formatWhatsAppMessage = (customer) => {
+    return buildWhatsAppMessage({
+      template: selectedRestaurant?.whatsapp_message_template || DEFAULT_WHATSAPP_MESSAGE,
+      customer,
+      restaurant: selectedRestaurant,
+    });
   };
 
   const { data: customers, isLoading } = useQuery({
@@ -198,7 +203,7 @@ export default function Customers() {
         stats.total,
         stats.confirmed,
         stats.cancelled,
-        stats.lastReservation ? format(new Date(stats.lastReservation), "dd/MM/yyyy") : ''
+        stats.lastReservation ? formatDateOnlyBR(stats.lastReservation) : ''
       ].join(',');
     });
 
@@ -207,7 +212,7 @@ export default function Customers() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `clientes-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `clientes-${getTodayDateOnly()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -437,7 +442,7 @@ export default function Customers() {
                     {/* Reservations Count */}
                     <div className="text-center px-3">
                       <div className="text-sm font-semibold text-gray-900">{stats.total} reservas</div>
-                      <div className="text-xs text-gray-500">{stats.lastReservation ? format(new Date(stats.lastReservation), "dd/MM/yy") : 'Sem reservas'}</div>
+                      <div className="text-xs text-gray-500">{stats.lastReservation ? formatDateOnlyBR(stats.lastReservation).slice(0, 5) : 'Sem reservas'}</div>
                     </div>
 
                     {/* Actions */}
@@ -445,7 +450,7 @@ export default function Customers() {
                       <div onClick={(e) => e.stopPropagation()}>
                         <WhatsAppButton
                           phone={customer.phone_whatsapp}
-                          message={formatWhatsAppMessage(customer.full_name)}
+                          message={formatWhatsAppMessage(customer)}
                           size="sm"
                           className="h-9 text-xs"
                         />

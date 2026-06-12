@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { createPageUrl } from "@/utils";
 import WhatsAppButton from "../components/shared/WhatsAppButton";
 import EditCustomerDialog from "../components/crm/EditCustomerDialog";
+import { formatDateOnlyBR } from "@/lib/date-utils";
+import { buildWhatsAppMessage, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp-message";
 
 export default function CustomerDetail() {
   const location = useLocation();
@@ -35,9 +37,12 @@ export default function CustomerDetail() {
   const restaurant = restaurants[0];
 
   // Helper function to format WhatsApp message
-  const formatWhatsAppMessage = (customerName) => {
-    const template = restaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
-    return template.replace(/{nome}/g, customerName);
+  const formatWhatsAppMessage = (customer) => {
+    return buildWhatsAppMessage({
+      template: restaurant?.whatsapp_message_template || DEFAULT_WHATSAPP_MESSAGE,
+      customer,
+      restaurant,
+    });
   };
 
   const { data: reservations = [], isLoading: loadingReservations } = useQuery({
@@ -160,7 +165,7 @@ export default function CustomerDetail() {
             <div className="flex gap-3">
               <WhatsAppButton
                 phone={customer.phone_whatsapp}
-                message={formatWhatsAppMessage(customer.full_name)}
+                message={formatWhatsAppMessage(customer)}
                 size="lg"
               />
               <EditCustomerDialog customer={customer} />
@@ -328,7 +333,7 @@ export default function CustomerDetail() {
                   <div className="bg-white p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Última Visita</p>
                     <p className="text-xl font-bold text-[#A56A38]">
-                      {format(new Date(stats.lastReservation), "dd/MM/yyyy")}
+                      {formatDateOnlyBR(stats.lastReservation)}
                     </p>
                   </div>
                 )}
@@ -374,7 +379,7 @@ export default function CustomerDetail() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-gray-400" />
-                              <span>{format(new Date(reservation.date), "dd/MM/yyyy")}</span>
+                              <span>{formatDateOnlyBR(reservation.date)}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-gray-400" />

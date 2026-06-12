@@ -12,6 +12,7 @@ import { Pencil, Trash2, CheckCircle, XCircle, AlertCircle, Users, Loader2 } fro
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateChangeLog, buildModificationNote, addModificationToReservation, addCancellationToReservation } from "@/components/utils/reservationChanges";
 import { validateAndReallocateTables } from "@/components/utils/reservationReallocation";
+import { toDateOnly } from "@/lib/date-utils";
 
 export default function EditReservationDialog({ reservation, trigger }) {
   const queryClient = useQueryClient();
@@ -63,8 +64,7 @@ export default function EditReservationDialog({ reservation, trigger }) {
 
   useEffect(() => {
     if (reservation) {
-      // Convert ISO date string to YYYY-MM-DD format for date input
-      const dateValue = reservation.date ? new Date(reservation.date).toISOString().split('T')[0] : '';
+      const dateValue = toDateOnly(reservation.date);
 
       const data = {
         date: dateValue,
@@ -167,9 +167,8 @@ export default function EditReservationDialog({ reservation, trigger }) {
 
       console.log('📝 Atualizando reserva com dados:', updateData);
 
-      // Converter date para ISO-8601 se fornecido
       if (updateData.date) {
-        updateData.date = new Date(updateData.date).toISOString();
+        updateData.date = toDateOnly(updateData.date);
       }
 
       // Converter status para UPPERCASE se fornecido

@@ -2,6 +2,7 @@ import {
   calculateOccupationPeriod, 
   isTableAvailable 
 } from "./reservationValidation";
+import { toDateOnly } from "@/lib/date-utils";
 
 /**
  * Valida e realoca mesas quando o número de pessoas muda
@@ -48,9 +49,9 @@ export const validateAndReallocateTables = async (
 
   // Filtrar reservas do mesmo dia (excluindo a atual)
   const otherReservations = allReservations.filter(r => 
-    r.date === reservation.date &&
+    toDateOnly(r.date) === toDateOnly(reservation.date) &&
     r.id !== reservation.id &&
-    (r.status === 'pending' || r.status === 'confirmed')
+    (r.status?.toUpperCase() === 'PENDING' || r.status?.toUpperCase() === 'CONFIRMED')
   );
 
   // CASO 1: Número de pessoas DIMINUIU
@@ -110,7 +111,7 @@ export const validateAndReallocateTables = async (
   // Verificar todas as mesas disponíveis no mesmo horário
   const availableTables = allTables.filter(t => 
     t.is_active && 
-    t.status === 'available' &&
+    t.status?.toUpperCase() === 'AVAILABLE' &&
     isTableAvailable(
       t.id,
       reservation.date,

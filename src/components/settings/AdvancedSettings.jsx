@@ -9,6 +9,7 @@ import { Save, Clock, Users, AlertCircle, CheckCircle, MessageCircle } from "luc
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp-message";
 
 export default function AdvancedSettings() {
   const queryClient = useQueryClient();
@@ -22,7 +23,7 @@ export default function AdvancedSettings() {
     enable_waitlist: true,
     enable_table_joining: true,
     enable_modifications: true, // NOVO
-    whatsapp_message_template: 'Olá {nome}! Tudo bem?'
+    whatsapp_message_template: DEFAULT_WHATSAPP_MESSAGE
   });
   const [message, setMessage] = useState(null);
 
@@ -46,7 +47,7 @@ export default function AdvancedSettings() {
         enable_waitlist: restaurant.enable_waitlist ?? true,
         enable_table_joining: restaurant.enable_table_joining ?? true,
         enable_modifications: restaurant.enable_modifications ?? true, // NOVO
-        whatsapp_message_template: restaurant.whatsapp_message_template || 'Olá {nome}! Tudo bem?'
+        whatsapp_message_template: restaurant.whatsapp_message_template || DEFAULT_WHATSAPP_MESSAGE
       });
     }
   }, [restaurant]);
@@ -310,13 +311,13 @@ export default function AdvancedSettings() {
                   id="whatsapp_message_template"
                   value={formData.whatsapp_message_template}
                   onChange={(e) => setFormData({...formData, whatsapp_message_template: e.target.value})}
-                  placeholder="Olá {nome}! Tudo bem?"
-                  rows={3}
-                  className="resize-none"
+                  placeholder={DEFAULT_WHATSAPP_MESSAGE}
+                  rows={7}
+                  className="resize-y"
                 />
                 <p className="text-xs text-gray-500">
-                  Use <code className="bg-gray-100 px-1 py-0.5 rounded">{'{nome}'}</code> para inserir o nome do cliente automaticamente.
-                  Esta mensagem será usada ao clicar no botão WhatsApp no CRM.
+                  Variáveis: <code className="bg-gray-100 px-1 py-0.5 rounded">{'{nome}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{data}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{horario}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{pessoas}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{codigo}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{restaurante}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{turno}'}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded">{'{mesa}'}</code>. Também funciona em maiúsculas, como <code className="bg-gray-100 px-1 py-0.5 rounded">{'{NOME}'}</code>.
+                  Esta mensagem será usada ao clicar no botão WhatsApp em reservas e CRM.
                 </p>
               </div>
             </div>

@@ -97,12 +97,12 @@ export default function TableManagementView({ selectedDate, restaurant }) {
         ? r.linked_tables 
         : [r.table_id];
       return tableIds.includes(tableId);
-    }).filter(r => r.status === 'pending' || r.status === 'confirmed');
+    }).filter(r => r.status?.toUpperCase() === 'PENDING' || r.status?.toUpperCase() === 'CONFIRMED');
   };
 
   const getTableStatus = (table) => {
-    if (table.status === 'blocked') return { status: 'blocked', label: 'Bloqueada', color: 'bg-red-100 border-red-300' };
-    if (table.status === 'unavailable') return { status: 'unavailable', label: 'Indisponível', color: 'bg-gray-100 border-gray-300' };
+    if (table.status?.toUpperCase() === 'BLOCKED') return { status: 'blocked', label: 'Bloqueada', color: 'bg-red-100 border-red-300' };
+    if (table.status?.toUpperCase() === 'UNAVAILABLE') return { status: 'unavailable', label: 'Indisponível', color: 'bg-gray-100 border-gray-300' };
     
     const tableReservations = getTableReservations(table.id);
     if (tableReservations.length === 0) {
@@ -179,7 +179,7 @@ export default function TableManagementView({ selectedDate, restaurant }) {
               +{tableReservations.length - 2} mais
             </p>
           )}
-          {tableReservations.length === 0 && table.status === 'available' && (
+          {tableReservations.length === 0 && table.status?.toUpperCase() === 'AVAILABLE' && (
             <p className="text-xs text-gray-500 text-center py-2">Nenhuma reserva</p>
           )}
         </CardContent>
@@ -194,7 +194,7 @@ export default function TableManagementView({ selectedDate, restaurant }) {
     const currentTable = tables.find(t => t.id === selectedReservation.table_id);
     const shift = getShift(selectedReservation.shift_id);
     const availableTables = tables.filter(t => 
-      t.status === 'available' && 
+      t.status?.toUpperCase() === 'AVAILABLE' && 
       t.seats >= selectedReservation.party_size
     );
 
@@ -357,7 +357,7 @@ export default function TableManagementView({ selectedDate, restaurant }) {
                       variant="outline" 
                       className="text-[10px] mt-2"
                     >
-                      {reservation.status === 'pending' ? 'Reservada' : 'Confirmada'}
+                      {reservation.status?.toUpperCase() === 'PENDING' ? 'Reservada' : 'Confirmada'}
                     </Badge>
                   </div>
                 );
@@ -427,7 +427,7 @@ export default function TableManagementView({ selectedDate, restaurant }) {
                     <p className="text-xs text-gray-600">Indisponíveis</p>
                   </div>
                   <p className="text-2xl font-bold text-gray-700">
-                    {tables.filter(t => t.status === 'unavailable').length}
+                    {tables.filter(t => t.status?.toUpperCase() === 'UNAVAILABLE').length}
                   </p>
                 </CardContent>
               </Card>
@@ -439,7 +439,7 @@ export default function TableManagementView({ selectedDate, restaurant }) {
                     <p className="text-xs text-gray-600">Bloqueadas</p>
                   </div>
                   <p className="text-2xl font-bold text-red-700">
-                    {tables.filter(t => t.status === 'blocked').length}
+                    {tables.filter(t => t.status?.toUpperCase() === 'BLOCKED').length}
                   </p>
                 </CardContent>
               </Card>

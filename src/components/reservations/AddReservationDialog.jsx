@@ -16,6 +16,7 @@ import {
   validateOpeningHours,
   getDayOfWeek
 } from "@/components/utils/reservationValidation";
+import { getTodayDateOnly, toDateOnly } from "@/lib/date-utils";
 
 export default function AddReservationDialog({ trigger }) {
   const queryClient = useQueryClient();
@@ -223,7 +224,7 @@ export default function AddReservationDialog({ trigger }) {
       });
 
       const existingReservations = allReservations.filter(r =>
-        r.status === 'pending' || r.status === 'confirmed'
+        r.status?.toUpperCase() === 'PENDING' || r.status?.toUpperCase() === 'CONFIRMED'
       );
       
       // Validação completa
@@ -266,13 +267,12 @@ export default function AddReservationDialog({ trigger }) {
       // Buscar o usuário autenticado para pegar o owner_email
       const user = await authService.me();
 
-      // Criar a reserva com data em formato ISO-8601
       const reservationData = {
         restaurant_id: restaurant.id,
         owner_email: user.email,
         customer_id: data.customer_id,
         reservation_code: code,
-        date: new Date(data.date).toISOString(), // Converter para ISO-8601
+        date: toDateOnly(data.date),
         shift_id: data.shift_id,
         slot_time: data.slot_time,
         party_size: parseInt(data.party_size),
@@ -327,7 +327,7 @@ export default function AddReservationDialog({ trigger }) {
   };
 
   const getTodayDate = () => {
-    return new Date().toISOString().split('T')[0];
+    return getTodayDateOnly();
   };
 
   // Buscar cliente por WhatsApp

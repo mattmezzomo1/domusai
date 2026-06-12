@@ -16,6 +16,8 @@ import SubscriptionGuard from "../components/subscription/SubscriptionGuard";
 import AddReservationDialog from "../components/reservations/AddReservationDialog";
 import EditReservationDialog from "../components/reservations/EditReservationDialog";
 import WhatsAppButton from "../components/shared/WhatsAppButton";
+import { dateOnlyToLocalDate, getTodayDateOnly, toDateOnly } from "@/lib/date-utils";
+import { buildWhatsAppMessage, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp-message";
 
 export default function Reservations() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,9 +53,15 @@ export default function Reservations() {
   const restaurant = restaurants[0];
 
   // Helper function to format WhatsApp message
-  const formatWhatsAppMessage = (customerName) => {
-    const template = restaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
-    return template.replace(/{nome}/g, customerName);
+  const formatWhatsAppMessage = (customer, reservation, shift, table) => {
+    return buildWhatsAppMessage({
+      template: restaurant?.whatsapp_message_template || DEFAULT_WHATSAPP_MESSAGE,
+      customer,
+      reservation,
+      restaurant,
+      shift,
+      tables: table ? [table] : [],
+    });
   };
 
   useEffect(() => {
@@ -221,9 +229,7 @@ export default function Reservations() {
     const matchesStatus = statusFilter === "all" || reservation.status === statusFilter;
 
     // Comparar datas corretamente (formato YYYY-MM-DD)
-    const reservationDate = typeof reservation.date === 'string'
-      ? reservation.date.split('T')[0]
-      : reservation.date;
+    const reservationDate = toDateOnly(reservation.date);
     const matchesDateRange = (!startDate || reservationDate >= startDate) &&
                              (!endDate || reservationDate <= endDate);
 
@@ -329,7 +335,7 @@ export default function Reservations() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reservas-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `reservas-${getTodayDateOnly()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -458,7 +464,10 @@ export default function Reservations() {
               <Input
                 type="date"
                 value={format(currentDate, "yyyy-MM-dd")}
-                onChange={(e) => setCurrentDate(new Date(e.target.value))}
+                onChange={(e) => {
+                  const nextDate = dateOnlyToLocalDate(e.target.value);
+                  if (nextDate) setCurrentDate(nextDate);
+                }}
                 className="h-9 w-44 text-sm border-gray-300"
               />
 
@@ -660,7 +669,7 @@ export default function Reservations() {
               {/* Group reservations by date */}
               {Object.entries(
                 paginatedReservations.reduce((groups, reservation) => {
-                  const date = reservation.date.split('T')[0];
+                  const date = toDateOnly(reservation.date);
                   if (!groups[date]) groups[date] = [];
                   groups[date].push(reservation);
                   return groups;
@@ -776,7 +785,7 @@ export default function Reservations() {
                               <div className="flex items-center gap-2 shrink-0">
                                 <WhatsAppButton
                                   phone={customer?.phone_whatsapp}
-                                  message={formatWhatsAppMessage(customer?.full_name)}
+                                  message={formatWhatsAppMessage(customer, reservation, shift, table)}
                                 />
                                 <EditReservationDialog reservation={reservation} />
                               </div>
@@ -858,7 +867,7 @@ export default function Reservations() {
                               <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                                 <WhatsAppButton
                                   phone={customer?.phone_whatsapp}
-                                  message={formatWhatsAppMessage(customer?.full_name)}
+                                  message={formatWhatsAppMessage(customer, reservation, shift, table)}
                                 />
                                 <EditReservationDialog reservation={reservation} />
                               </div>

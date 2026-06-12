@@ -1,13 +1,14 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateOnlyBR, toDateOnly } from "@/lib/date-utils";
 
 export const generateChangeLog = (oldReservation, newData, shifts) => {
   const changes = [];
   
   // Verificar mudança de data
-  if (newData.date && newData.date !== oldReservation.date) {
-    const oldDate = format(new Date(oldReservation.date), "dd/MM/yyyy");
-    const newDate = format(new Date(newData.date), "dd/MM/yyyy");
+  if (newData.date && toDateOnly(newData.date) !== toDateOnly(oldReservation.date)) {
+    const oldDate = formatDateOnlyBR(oldReservation.date);
+    const newDate = formatDateOnlyBR(newData.date);
     changes.push(`Data alterada de ${oldDate} para ${newDate}`);
   }
   

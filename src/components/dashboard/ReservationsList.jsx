@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import EditReservationDialog from "../reservations/EditReservationDialog";
 import WhatsAppButton from "../shared/WhatsAppButton";
 import { restaurantService } from "@/services/api.service";
+import { buildWhatsAppMessage, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp-message";
 
 export default function ReservationsList({ reservations, isLoading, selectedDate }) {
   const queryClient = useQueryClient();
@@ -35,9 +36,15 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
   const restaurant = restaurants[0];
 
   // Helper function to format WhatsApp message
-  const formatWhatsAppMessage = (customerName) => {
-    const template = restaurant?.whatsapp_message_template || 'Olá {nome}! Tudo bem?';
-    return template.replace(/{nome}/g, customerName);
+  const formatWhatsAppMessage = (customer, reservation, shift, table) => {
+    return buildWhatsAppMessage({
+      template: restaurant?.whatsapp_message_template || DEFAULT_WHATSAPP_MESSAGE,
+      customer,
+      reservation,
+      restaurant,
+      shift,
+      tables: table ? [table] : [],
+    });
   };
 
   const { data: customers } = useQuery({
@@ -326,7 +333,7 @@ export default function ReservationsList({ reservations, isLoading, selectedDate
                     <div className="flex items-center gap-2 shrink-0">
                       <WhatsAppButton
                         phone={customer?.phone_whatsapp}
-                        message={formatWhatsAppMessage(customer?.full_name)}
+                        message={formatWhatsAppMessage(customer, reservation, shift, table)}
                         size="sm"
                         className="text-xs"
                       />

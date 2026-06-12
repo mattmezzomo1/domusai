@@ -180,11 +180,11 @@ export default function TableMapView({ selectedDate, restaurant }) {
 
     if (!reservation || !destinationTable) return { canDrop: false, reason: "Mesa não encontrada" };
 
-    if (destinationTable.status === 'blocked') {
+    if (destinationTable.status?.toUpperCase() === 'BLOCKED') {
       return { canDrop: false, reason: "Mesa bloqueada" };
     }
 
-    if (destinationTable.status === 'unavailable') {
+    if (destinationTable.status?.toUpperCase() === 'UNAVAILABLE') {
       return { canDrop: false, reason: "Mesa indisponível" };
     }
 
@@ -192,7 +192,7 @@ export default function TableMapView({ selectedDate, restaurant }) {
     if (destinationTable.seats < reservation.party_size) {
       // Tentar encontrar combinação de mesas
       const availableTables = tables.filter(t => 
-        t.status === 'available' && 
+        t.status?.toUpperCase() === 'AVAILABLE' && 
         !getTableReservations(t.id).some(r => r.id !== reservation.id)
       ).sort((a, b) => a.seats - b.seats);
 
@@ -265,7 +265,7 @@ export default function TableMapView({ selectedDate, restaurant }) {
     } else {
       // Alocar múltiplas mesas
       const availableTables = tables.filter(t => 
-        t.status === 'available' && 
+        t.status?.toUpperCase() === 'AVAILABLE' && 
         !getTableReservations(t.id).some(r => r.id !== reservation.id)
       ).sort((a, b) => a.seats - b.seats);
 

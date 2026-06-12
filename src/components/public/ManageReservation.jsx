@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Search, AlertCircle, Calendar, Clock, Users, Phone } from "lucide-react";
 import EditReservationPublic from "./EditReservationPublic";
+import { formatDateOnlyBR } from "@/lib/date-utils";
 
 export default function ManageReservation({ restaurant, action, onBack }) {
   const [phone, setPhone] = useState("");
@@ -114,12 +115,7 @@ export default function ManageReservation({ restaurant, action, onBack }) {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    return formatDateOnlyBR(dateString);
   };
 
   const formatPhone = (value) => {

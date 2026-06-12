@@ -1,4 +1,5 @@
 import { format, addMinutes, isAfter, isBefore } from "date-fns";
+import { toDateOnly } from "@/lib/date-utils";
 
 /**
  * Converte string de data para objeto Date local (evita problemas de timezone)
@@ -129,8 +130,10 @@ export const isTableAvailable = (
 ) => {
   // Filtrar reservas que usam esta mesa no mesmo dia
   const tableReservations = existingReservations.filter(r => {
-    if (r.date !== date) return false;
-    if (r.status === 'cancelled' || r.status === 'no_show') return false;
+    if (toDateOnly(r.date) !== toDateOnly(date)) return false;
+
+    const status = r.status?.toUpperCase();
+    if (status === 'CANCELLED' || status === 'NO_SHOW') return false;
     
     const tableIds = r.linked_tables && r.linked_tables.length > 0 
       ? r.linked_tables 
@@ -276,9 +279,9 @@ export const validateShiftCapacity = (
   
   // Somar pessoas de todas as reservas ativas no mesmo turno e dia
   const shiftReservations = existingReservations.filter(r =>
-    r.date === date &&
+    toDateOnly(r.date) === toDateOnly(date) &&
     r.shift_id === shift.id &&
-    (r.status === 'pending' || r.status === 'confirmed')
+    (r.status?.toUpperCase() === 'PENDING' || r.status?.toUpperCase() === 'CONFIRMED')
   );
   
   const currentOccupancy = shiftReservations.reduce((sum, r) => sum + r.party_size, 0);

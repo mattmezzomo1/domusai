@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getTodayDateOnly } from "@/lib/date-utils";
 
 export default function BookingStep1({ onComplete, formData, setFormData, restaurant, shifts, environments }) {
   const [selectedDate, setSelectedDate] = useState(formData.date || "");
@@ -88,7 +89,7 @@ export default function BookingStep1({ onComplete, formData, setFormData, restau
   };
 
   // Data mínima: hoje
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDateOnly();
 
   return (
     <div className="space-y-8 animate-fade-in">

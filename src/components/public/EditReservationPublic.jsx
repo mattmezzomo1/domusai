@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { shiftService, tableService, reservationService } from "@/services/api.service";
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
+import { getTodayDateOnly, toDateOnly } from "@/lib/date-utils";
 
 export default function EditReservationPublic({ reservation, restaurant, onBack, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -31,11 +32,8 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
   // Inicializar form com dados da reserva
   useEffect(() => {
     if (reservation) {
-      const dateObj = new Date(reservation.date);
-      const formattedDate = dateObj.toISOString().split('T')[0];
-      
       setFormData({
-        date: formattedDate,
+        date: toDateOnly(reservation.date),
         shift_id: reservation.shift_id,
         slot_time: reservation.slot_time,
         party_size: reservation.party_size.toString(),
@@ -98,7 +96,7 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
 
       const existingReservations = allReservations.filter(r => 
         r.id !== reservation.id && // Excluir a reserva atual
-        (r.status === "confirmed" || r.status === "pending") &&
+        (r.status?.toUpperCase() === "CONFIRMED" || r.status?.toUpperCase() === "PENDING") &&
         r.slot_time === formData.slot_time
       );
 
@@ -134,7 +132,7 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
       const tableIds = selectedTables.map(t => t.id);
 
       const updatePayload = {
-        date: new Date(formData.date).toISOString(),
+        date: toDateOnly(formData.date),
         shift_id: formData.shift_id,
         slot_time: formData.slot_time,
         party_size: partySize,
@@ -232,7 +230,7 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            min={new Date().toISOString().split('T')[0]}
+            min={getTodayDateOnly()}
             required
             className="w-full bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#C47B3C] transition-colors"
           />
@@ -320,4 +318,3 @@ export default function EditReservationPublic({ reservation, restaurant, onBack,
     </div>
   );
 }
-

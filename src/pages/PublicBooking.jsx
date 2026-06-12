@@ -9,6 +9,7 @@ import BookingStep2 from "../components/public/BookingStep2";
 import BookingStep3 from "../components/public/BookingStep3";
 import BookingConfirmation from "../components/public/BookingConfirmation";
 import ManageReservation from "../components/public/ManageReservation";
+import { toDateOnly } from "@/lib/date-utils";
 
 export default function PublicBooking() {
   const [currentView, setCurrentView] = useState("home");
@@ -312,7 +313,7 @@ export default function PublicBooking() {
         owner_email: restaurant.owner_email,
         customer_id: customer.id,
         reservation_code: code,
-        date: new Date(finalData.date).toISOString(), // Converter para ISO-8601
+        date: toDateOnly(finalData.date),
         shift_id: finalData.shift_id,
         slot_time: finalData.slot_time,
         party_size: parseInt(finalData.party_size),

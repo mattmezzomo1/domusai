@@ -1,7 +1,6 @@
 import React from "react";
 import { CheckCircle, Phone, Calendar, Users, Clock, User } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateOnlyBR } from "@/lib/date-utils";
 
 export default function BookingConfirmation({ reservationCode, restaurant, bookingData, onBackToHome }) {
   // Formatar o número de telefone para exibição
@@ -75,7 +74,7 @@ export default function BookingConfirmation({ reservationCode, restaurant, booki
               <div>
                 <p className="text-[#888888] text-xs">Data</p>
                 <p className="text-white font-medium">
-                  {format(new Date(bookingData.date), "dd/MM/yyyy", { locale: ptBR })}
+                  {formatDateOnlyBR(bookingData.date)}
                 </p>
               </div>
             </div>
