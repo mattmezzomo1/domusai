@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import prisma from '../../utils/db';
 import { AppError } from '../../middleware/error.middleware';
+import { hasSubscriptionAccess, isBlockedRhizoSubscription } from '../../utils/subscription-access.util';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-02-24.acacia',
@@ -16,12 +17,24 @@ export class PaymentsService {
       throw new AppError('User not found', 404);
     }
 
-    // Get or create Stripe customer
-    let stripeCustomerId: string;
-    const subscription = await prisma.subscription.findFirst({
+    const subscriptions = await prisma.subscription.findMany({
       where: { user_email: userEmail },
       orderBy: { created_date: 'desc' },
     });
+
+    const hasExplicitBlockedRhizo = subscriptions.some((candidate) => isBlockedRhizoSubscription(candidate));
+    const accessUser = hasExplicitBlockedRhizo ? undefined : user;
+    const alreadyHasAccess =
+      subscriptions.some((candidate) => hasSubscriptionAccess(candidate, accessUser)) ||
+      (!hasExplicitBlockedRhizo && hasSubscriptionAccess(undefined, user));
+
+    if (alreadyHasAccess) {
+      throw new AppError('User already has active access', 409);
+    }
+
+    // Get or create Stripe customer
+    let stripeCustomerId: string;
+    const subscription = subscriptions.find((candidate) => candidate.stripe_customer_id) || subscriptions[0] || null;
 
     if (subscription?.stripe_customer_id) {
       stripeCustomerId = subscription.stripe_customer_id;
@@ -197,4 +210,3 @@ export class PaymentsService {
 }
 
 export default new PaymentsService();
-

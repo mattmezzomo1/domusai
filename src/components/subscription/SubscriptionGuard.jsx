@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CreditCard } from "lucide-react";
 import { isAdmin } from "@/lib/utils";
+import { hasSubscriptionAccess } from "@/lib/subscription-access";
 
 export default function SubscriptionGuard({ children }) {
   const [user, setUser] = useState(null);
@@ -69,15 +70,7 @@ export default function SubscriptionGuard({ children }) {
     );
   }
 
-  // Verificar se tem assinatura ativa e dentro da validade
-  // Backend retorna status em UPPERCASE (ACTIVE, TRIAL, CANCELLED, PAST_DUE)
-  const isStatusValid = subscription &&
-    (subscription.status === 'ACTIVE' || subscription.status === 'TRIAL');
-  const periodEnd = subscription?.current_period_end
-    ? new Date(subscription.current_period_end)
-    : null;
-  const isWithinPeriod = periodEnd ? periodEnd.getTime() > Date.now() : false;
-  const hasActiveSubscription = isStatusValid && isWithinPeriod;
+  const hasActiveSubscription = hasSubscriptionAccess(subscription, user);
 
   console.log('🔐 Subscription check:', { hasActiveSubscription, subscription });
 

@@ -375,6 +375,7 @@ export const newFunctionsService = {
       'admin-grant-free-plan': () => newFunctionsService.grantFreePlan(params.user_email),
       'admin-revoke-access': () => newFunctionsService.revokeAccess(params.user_email),
       'admin-upgrade-to-paid': () => newFunctionsService.upgradeToPaid(params.user_email),
+      'create-checkout': () => newPaymentService.createCheckout(params),
     };
 
     if (functionMap[functionName]) {
@@ -393,4 +394,3 @@ export const newPaymentService = {
     return apiClient.post('/payments/create-checkout', data);
   }
 };
-

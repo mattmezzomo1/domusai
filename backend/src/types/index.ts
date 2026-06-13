@@ -19,6 +19,8 @@ export interface UserResponseDTO {
   full_name: string;
   role: string;
   avatar_url: string | null;
+  phone?: string | null;
+  rhizo_customer_id?: string | null;
   created_date: Date;
   updated_date: Date;
 }
@@ -336,8 +338,11 @@ export interface SubscriptionResponseDTO {
   user_email: string;
   plan_type: string;
   status: string;
+  provider?: string;
+  tier?: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  rhizo_customer_id?: string | null;
   current_period_start: Date;
   current_period_end: Date;
   cancelled_at: Date | null;
@@ -357,4 +362,3 @@ export interface PaginationParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
-

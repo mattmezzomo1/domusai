@@ -1,6 +1,7 @@
 import prisma from '../../utils/db';
 import { AppError } from '../../middleware/error.middleware';
 import { CreateSubscriptionDTO, UpdateSubscriptionDTO, SubscriptionResponseDTO, FilterParams } from '../../types';
+import { hasRhizoRegistration, hasSubscriptionAccess } from '../../utils/subscription-access.util';
 
 export class SubscriptionsService {
   async create(data: CreateSubscriptionDTO): Promise<SubscriptionResponseDTO> {
@@ -50,10 +51,20 @@ export class SubscriptionsService {
   }
 
   async findByUserEmail(userEmail: string): Promise<SubscriptionResponseDTO | null> {
-    const subscription = await prisma.subscription.findFirst({
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail },
+    });
+
+    const subscriptions = await prisma.subscription.findMany({
       where: { user_email: userEmail },
       orderBy: { created_date: 'desc' },
     });
+
+    const rhizoSubscription = subscriptions.find((candidate) => hasRhizoRegistration(undefined, candidate));
+    const activeSubscription = subscriptions.find((candidate) =>
+      hasSubscriptionAccess(candidate, rhizoSubscription ? undefined : user)
+    );
+    const subscription = activeSubscription || rhizoSubscription || subscriptions[0] || null;
 
     return subscription as SubscriptionResponseDTO | null;
   }
@@ -90,4 +101,3 @@ export class SubscriptionsService {
 }
 
 export default new SubscriptionsService();
-

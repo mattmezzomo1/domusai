@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
-import { functionsService } from "@/services/api.service";
+import { paymentService, subscriptionService } from "@/services/api.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, CreditCard, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { hasSubscriptionAccess } from "@/lib/subscription-access";
 
 export default function PlansPage() {
   const navigate = useNavigate();
@@ -30,13 +31,19 @@ export default function PlansPage() {
     queryKey: ['user-subscription', user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
-      const subs = await base44.entities.Subscription.filter({ user_email: user.email });
-      return subs.length > 0 ? subs[0] : null;
+      return subscriptionService.getByUserEmail(user.email);
     },
     enabled: !!user?.email,
   });
 
+  const hasActiveSubscription = hasSubscriptionAccess(subscription, user);
+
   const handleSubscribe = async () => {
+    if (hasActiveSubscription) {
+      navigate(createPageUrl("Dashboard"));
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Verificar se está rodando em iframe
@@ -50,7 +57,8 @@ export default function PlansPage() {
       const successUrl = `${window.location.origin}${createPageUrl("Dashboard")}`;
       const cancelUrl = `${window.location.origin}${createPageUrl("Plans")}`;
 
-      const response = await functionsService.invoke('create-checkout', {
+      const response = await paymentService.createCheckout({
+        price_id: priceId,
         priceId,
         successUrl,
         cancelUrl
@@ -58,8 +66,12 @@ export default function PlansPage() {
 
       console.log('Checkout response:', response);
 
-      if (response?.checkoutUrl) {
+      if (response?.url) {
+        window.location.href = response.url;
+      } else if (response?.checkoutUrl) {
         window.location.href = response.checkoutUrl;
+      } else if (response?.data?.url) {
+        window.location.href = response.data.url;
       } else if (response?.data?.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       } else {
@@ -72,9 +84,6 @@ export default function PlansPage() {
       setIsProcessing(false);
     }
   };
-
-  const hasActiveSubscription = subscription &&
-    (subscription.status === 'ACTIVE' || subscription.status === 'TRIAL');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-amber-50/30 p-6">

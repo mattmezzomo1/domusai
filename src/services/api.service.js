@@ -409,6 +409,23 @@ export const functionsService = {
  * Service para gerenciar Payments
  */
 export const paymentService = {
+  createCheckout: async (data) => {
+    if (USE_MOCK) {
+      return mockDataService.functions.invoke('create-checkout', {
+        priceId: data?.priceId || data?.price_id,
+        successUrl: data?.successUrl,
+        cancelUrl: data?.cancelUrl,
+      });
+    }
+    if (USE_NEW_API) return newPaymentService.createCheckout(data);
+    return base44.functions.invoke('create-checkout', {
+      priceId: data?.priceId || data?.price_id,
+      successUrl: data?.successUrl,
+      cancelUrl: data?.cancelUrl,
+      couponCode: data?.couponCode,
+    });
+  },
+
   list: async () => {
     if (USE_MOCK) return mockDataService.payments?.list() || [];
     if (USE_NEW_API) return newPaymentService.list();
@@ -439,4 +456,3 @@ export const paymentService = {
     return base44.entities.Payment?.delete(id);
   }
 };
-
