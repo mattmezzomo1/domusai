@@ -35,3 +35,24 @@ export function toPrismaDateOnly(value: Date | string | null | undefined): Date 
   const [year, month, day] = dateOnly.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
+
+export function toPrismaDateOnlyStart(value: Date | string | null | undefined): Date | null {
+  const dateOnly = toDateOnlyString(value);
+  if (!dateOnly) return null;
+
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+}
+
+export function toPrismaDateOnlyRange(
+  value: Date | string | null | undefined
+): { gte: Date; lt: Date } | null {
+  const dateOnly = toDateOnlyString(value);
+  if (!dateOnly) return null;
+
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return {
+    gte: new Date(Date.UTC(year, month - 1, day, 0, 0, 0)),
+    lt: new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0)),
+  };
+}
