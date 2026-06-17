@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { User, Phone, Mail, Cake, FileText } from "lucide-react";
 import { customerService } from "@/services/api.service";
+import InternationalPhoneInput from "./InternationalPhoneInput";
+import {
+  formatPhoneNationalInput,
+  normalizePhoneForCountry,
+} from "@/lib/phone-utils";
 
-export default function BookingStep3({ bookingData, restaurant, onComplete, onBack }) {
+export default function BookingStep3({ bookingData, restaurant, onComplete, onBack, isSubmitting = false }) {
+  const initialCountryIso = bookingData.phone_country_iso || "BR";
   const [formData, setFormData] = useState({
+    phone_input: bookingData.phone_input || formatPhoneNationalInput(
+      bookingData.phone_whatsapp || "",
+      initialCountryIso
+    ),
+    phone_country_iso: initialCountryIso,
     phone_whatsapp: bookingData.phone_whatsapp || "",
     full_name: bookingData.full_name || "",
     email: bookingData.email || "",
@@ -19,13 +30,17 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
   // Buscar cliente quando WhatsApp for preenchido
   useEffect(() => {
     const searchCustomer = async () => {
-      const cleanPhone = formData.phone_whatsapp.replace(/\D/g, '');
+      const phone = normalizePhoneForCountry(formData.phone_input, formData.phone_country_iso);
 
-      if (cleanPhone.length >= 10) {
+      if (phone.isValid) {
         setIsLoadingCustomer(true);
         try {
           // Use public endpoint that doesn't require authentication
-          const customer = await customerService.getByPhoneAndRestaurant(cleanPhone, restaurant.id);
+          const customer = await customerService.getByPhoneAndRestaurant(
+            phone.digits,
+            restaurant.id,
+            phone.countryIso
+          );
 
           if (customer) {
             setExistingCustomer(customer);
@@ -67,10 +82,12 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
 
     const debounce = setTimeout(searchCustomer, 500);
     return () => clearTimeout(debounce);
-  }, [formData.phone_whatsapp, restaurant.id]);
+  }, [formData.phone_input, formData.phone_country_iso, restaurant.id]);
 
   const handleSubmit = () => {
-    if (!formData.phone_whatsapp || !formData.full_name) {
+    const phone = normalizePhoneForCountry(formData.phone_input, formData.phone_country_iso);
+
+    if (!formData.phone_input || !formData.full_name) {
       alert("WhatsApp e Nome são obrigatórios");
       return;
     }
@@ -81,10 +98,9 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
       return;
     }
 
-    // Validar WhatsApp (formato básico)
-    const cleanPhone = formData.phone_whatsapp.replace(/\D/g, '');
-    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
-      alert("Por favor, insira um WhatsApp válido (11 dígitos com DDD)");
+    // Validar WhatsApp pelo pais selecionado
+    if (!phone.isValid) {
+      alert("Por favor, selecione o pais e insira um WhatsApp valido");
       return;
     }
 
@@ -99,7 +115,9 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
 
     onComplete({
       full_name: formData.full_name,
-      phone_whatsapp: cleanPhone,
+      phone_whatsapp: phone.digits,
+      phone_country_iso: phone.countryIso,
+      phone_input: formData.phone_input,
       email: formData.email,
       birth_date: birthday,
       notes: formData.notes,
@@ -107,24 +125,13 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
     });
   };
 
-  const handlePhoneChange = (value) => {
-    // Remover tudo que não é número
-    const cleaned = value.replace(/\D/g, '');
-
-    // Limitar a 11 dígitos (DDD + 9 dígitos)
-    const limited = cleaned.substring(0, 11);
-
-    // Formatar telefone automaticamente
-    let formatted = limited;
-
-    if (limited.length >= 2) {
-      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2)}`;
-    }
-    if (limited.length >= 7) {
-      formatted = `(${limited.substring(0, 2)}) ${limited.substring(2, 7)}-${limited.substring(7)}`;
-    }
-
-    setFormData({ ...formData, phone_whatsapp: formatted });
+  const handlePhoneChange = (phone) => {
+    setFormData({
+      ...formData,
+      phone_input: phone.inputValue,
+      phone_country_iso: phone.countryIso,
+      phone_whatsapp: phone.normalizedPhone,
+    });
   };
 
   return (
@@ -145,13 +152,11 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
             <Phone className="w-4 h-4 text-[#C47B3C]" />
             WhatsApp *
           </label>
-          <input
-            type="tel"
-            value={formData.phone_whatsapp}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-            placeholder="(11) 99999-9999"
-            maxLength={15}
-            className="w-full p-4 bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
+          <InternationalPhoneInput
+            value={formData.phone_input}
+            countryIso={formData.phone_country_iso}
+            onChange={handlePhoneChange}
+            disabled={isSubmitting}
           />
           {isLoadingCustomer && (
             <p className="text-xs text-[#C47B3C] mt-1 animate-pulse">
@@ -163,7 +168,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
               ✓ Cliente encontrado! Dados preenchidos automaticamente.
             </p>
           )}
-          {!existingCustomer && !isLoadingCustomer && formData.phone_whatsapp.replace(/\D/g, '').length >= 10 && (
+          {!existingCustomer && !isLoadingCustomer && normalizePhoneForCountry(formData.phone_input, formData.phone_country_iso).isValid && (
             <p className="text-xs text-[#888888] mt-1">
               Novo cliente - preencha os dados abaixo
             </p>
@@ -216,7 +221,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
                 setFormData({ ...formData, birthday_day: val });
               }}
               placeholder="DD"
-              maxLength="2"
+              maxLength={2}
               className="w-20 p-4 text-center bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
             />
             <input
@@ -227,7 +232,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
                 setFormData({ ...formData, birthday_month: val });
               }}
               placeholder="MM"
-              maxLength="2"
+              maxLength={2}
               className="w-20 p-4 text-center bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
             />
             <input
@@ -238,7 +243,7 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
                 setFormData({ ...formData, birthday_year: val });
               }}
               placeholder="AAAA"
-              maxLength="4"
+              maxLength={4}
               className="flex-1 p-4 text-center bg-[rgba(255,255,255,0.05)] border border-white/10 rounded-lg text-white placeholder-[#888888] focus:border-[#C47B3C] focus:outline-none transition-all"
             />
           </div>
@@ -266,19 +271,21 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
       <div className="flex gap-3">
         <button
           onClick={onBack}
+          disabled={isSubmitting}
           className="premium-button-outline flex-1"
         >
           Voltar
         </button>
         <button
           onClick={handleSubmit}
+          disabled={isSubmitting}
           className="premium-button flex-1"
         >
-          Confirmar Reserva
+          {isSubmitting ? "Confirmando..." : "Confirmar Reserva"}
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .premium-button {
           background: linear-gradient(135deg, #C47B3C, #A56A38);
           color: white;
@@ -295,6 +302,13 @@ export default function BookingStep3({ bookingData, restaurant, onComplete, onBa
         .premium-button:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(196, 123, 60, 0.4);
+        }
+
+        .premium-button:disabled,
+        .premium-button-outline:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
         }
 
         .premium-button-outline {

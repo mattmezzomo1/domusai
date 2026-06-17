@@ -114,6 +114,7 @@ export interface CreateCustomerDTO {
   restaurant_id: string;
   full_name: string;
   phone_whatsapp: string;
+  phone_country_iso?: string;
   email?: string;
   birth_date?: Date;
 }
@@ -121,6 +122,7 @@ export interface CreateCustomerDTO {
 export interface UpdateCustomerDTO {
   full_name?: string;
   phone_whatsapp?: string;
+  phone_country_iso?: string;
   email?: string;
   birth_date?: Date;
   total_reservations?: number;
@@ -255,6 +257,7 @@ export interface MetaTrackingContext {
   // Customer PII passed for hashing (never stored raw on the CAPI payload)
   email?: string | null;
   phone?: string | null;
+  phone_country_iso?: string | null;
   full_name?: string | null;
   birth_date?: string | null;  // YYYY-MM-DD — hashed server-side as `db` (YYYYMMDD)
 }

@@ -1,17 +1,20 @@
 /**
  * Meta Pixel / Conversions API - Hashing & Normalization Utilities
  *
- * Follows Meta's official Customer Information Parameters spec:
- * https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters
- *
- * Rules:
- *  - All values must be lowercased and trimmed before hashing
- *  - Phone numbers: digits only, with country code (no leading + or zeros)
- *  - Names: lowercase, trimmed, no extra whitespace
- *  - SHA-256 hex digest
+ * Follows Meta's Customer Information Parameters rules:
+ * - normalize before hashing
+ * - phone numbers: digits only, including country code
+ * - SHA-256 hex digest for hashed customer information parameters
  */
 
 import { createHash } from 'crypto';
+import {
+  isSupportedCountry,
+  parsePhoneNumberFromString,
+} from 'libphonenumber-js/max';
+import type { CountryCode } from 'libphonenumber-js/max';
+
+const DEFAULT_PHONE_COUNTRY: CountryCode = 'BR';
 
 /**
  * SHA-256 hash a pre-normalized string value.
@@ -25,50 +28,93 @@ export function hashSHA256(value: string | null | undefined): string | null {
 }
 
 /**
- * Normalize and hash an email address.
+ * Normalize an email address before hashing.
  */
-export function hashEmail(email: string | null | undefined): string | null {
+export function normalizeEmail(email: string | null | undefined): string | null {
   if (!email) return null;
-  return hashSHA256(email.trim().toLowerCase());
+  const normalized = email.trim().toLowerCase();
+  return normalized || null;
 }
 
 /**
- * Normalize a phone number to E.164 digits-only format (no + or spaces),
- * prepend Brazilian country code "55" if the number has 10-11 digits and
- * does not already start with the country code.
+ * Normalize and hash an email address.
+ */
+export function hashEmail(email: string | null | undefined): string | null {
+  return hashSHA256(normalizeEmail(email));
+}
+
+export function normalizePhoneCountry(countryIso: string | null | undefined): CountryCode {
+  const candidate = String(countryIso || DEFAULT_PHONE_COUNTRY).trim().toUpperCase();
+  return isSupportedCountry(candidate) ? candidate as CountryCode : DEFAULT_PHONE_COUNTRY;
+}
+
+/**
+ * Normalize a phone number to E.164 digits-only format (no + or spaces).
  *
  * Meta requires: digits only, country code prepended, no leading zeros.
  */
-export function normalizePhone(phone: string | null | undefined): string | null {
+export function normalizePhone(
+  phone: string | null | undefined,
+  countryIso: string | null | undefined = DEFAULT_PHONE_COUNTRY
+): string | null {
   if (!phone) return null;
-  const digits = phone.replace(/\D/g, '');
-  if (!digits) return null;
+  const raw = String(phone).trim();
+  if (!raw) return null;
 
-  // Already has a country code (Brazil 55 + DDD = 12-13 digits)
-  if (digits.length >= 12) return digits;
+  const selectedCountry = normalizePhoneCountry(countryIso);
+  const parsed = raw.startsWith('+')
+    ? parsePhoneNumberFromString(raw)
+    : parsePhoneNumberFromString(raw, selectedCountry);
 
-  // Brazilian local number: 10 (landline) or 11 (mobile) digits → prepend "55"
-  if (digits.length >= 10 && digits.length <= 11) return `55${digits}`;
+  if (!parsed || (parsed.country && parsed.country !== selectedCountry) || !parsed.isValid()) {
+    return null;
+  }
 
-  return digits;
+  return parsed.number.replace(/\D/g, '');
 }
 
 /**
  * Normalize and hash a phone number.
  */
-export function hashPhone(phone: string | null | undefined): string | null {
-  const normalized = normalizePhone(phone);
+export function hashPhone(
+  phone: string | null | undefined,
+  countryIso: string | null | undefined = DEFAULT_PHONE_COUNTRY
+): string | null {
+  const normalized = normalizePhone(phone, countryIso);
   if (!normalized) return null;
   return createHash('sha256').update(normalized).digest('hex');
+}
+
+export function normalizeNamePart(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\s'-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalized || null;
+}
+
+export function normalizeNameParts(fullName: string | null | undefined): {
+  firstName: string | null;
+  lastName: string | null;
+} {
+  const normalized = normalizeNamePart(fullName);
+  if (!normalized) return { firstName: null, lastName: null };
+
+  const parts = normalized.split(/\s+/);
+  return {
+    firstName: parts[0] || null,
+    lastName: parts.length > 1 ? parts.slice(1).join(' ') : null,
+  };
 }
 
 /**
  * Extract and hash the first name from a full name string.
  */
 export function hashFirstName(fullName: string | null | undefined): string | null {
-  if (!fullName) return null;
-  const firstName = fullName.trim().split(/\s+/)[0];
-  if (!firstName) return null;
+  const { firstName } = normalizeNameParts(fullName);
   return hashSHA256(firstName);
 }
 
@@ -76,10 +122,7 @@ export function hashFirstName(fullName: string | null | undefined): string | nul
  * Extract and hash the last name (everything after the first word) from a full name string.
  */
 export function hashLastName(fullName: string | null | undefined): string | null {
-  if (!fullName) return null;
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length < 2) return null;
-  const lastName = parts.slice(1).join(' ');
+  const { lastName } = normalizeNameParts(fullName);
   return hashSHA256(lastName);
 }
 
@@ -93,10 +136,8 @@ export function formatDateOfBirth(
 ): string | null {
   if (!value) return null;
 
-  // If it's already a YYYYMMDD digit string, return as-is
   if (typeof value === 'string' && /^\d{8}$/.test(value)) return value;
 
-  // Fast path for YYYY-MM-DD strings (avoid timezone shifts from new Date())
   if (typeof value === 'string') {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) return `${match[1]}${match[2]}${match[3]}`;
@@ -112,7 +153,7 @@ export function formatDateOfBirth(
 }
 
 /**
- * Normalize and hash a date of birth (YYYYMMDD → SHA-256 hex).
+ * Normalize and hash a date of birth (YYYYMMDD -> SHA-256 hex).
  */
 export function hashDateOfBirth(
   value: Date | string | null | undefined
@@ -140,4 +181,3 @@ export function getCookieValue(cookieHeader: string | undefined, name: string): 
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }
-

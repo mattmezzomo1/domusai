@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "test:meta": "tsx tests/meta.util.test.ts",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -29,8 +30,9 @@
     "express": "^4.21.2",
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
-    "stripe": "^17.5.0",
-    "nodemailer": "^6.9.16"
+    "libphonenumber-js": "^1.13.6",
+    "nodemailer": "^6.9.16",
+    "stripe": "^17.5.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -44,4 +46,3 @@
     "typescript": "^5.7.2"
   }
 }
-

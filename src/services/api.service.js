@@ -142,12 +142,12 @@ export const customerService = {
   },
 
   // Public method to find customer by phone and restaurant (no auth required)
-  getByPhoneAndRestaurant: async (phone, restaurantId) => {
+  getByPhoneAndRestaurant: async (phone, restaurantId, phoneCountryIso = null) => {
     if (USE_MOCK) {
       const customers = mockDataService.customers.filter({ phone_whatsapp: phone, restaurant_id: restaurantId });
       return customers.length > 0 ? customers[0] : null;
     }
-    if (USE_NEW_API) return newCustomerService.getByPhoneAndRestaurant(phone, restaurantId);
+    if (USE_NEW_API) return newCustomerService.getByPhoneAndRestaurant(phone, restaurantId, phoneCountryIso);
     // For Base44, fallback to filter
     const customers = await base44.entities.Customer.filter({ phone_whatsapp: phone, restaurant_id: restaurantId });
     return customers.length > 0 ? customers[0] : null;

@@ -28,6 +28,7 @@ export interface MetaCapiLeadPayload {
   fbc?: string | null;       // _fbc cookie (from fbclid query param)
   email?: string | null;
   phone?: string | null;
+  phoneCountryIso?: string | null;
   fullName?: string | null;
   birthDate?: Date | string | null;  // YYYY-MM-DD or Date — hashed as YYYYMMDD for `db`
   externalId?: string | null;        // Advertiser's unique id (e.g. reservation id) for `external_id`
@@ -50,6 +51,7 @@ export async function sendMetaLeadEvent(payload: MetaCapiLeadPayload): Promise<v
     fbc,
     email,
     phone,
+    phoneCountryIso,
     fullName,
     birthDate,
     externalId,
@@ -64,7 +66,7 @@ export async function sendMetaLeadEvent(payload: MetaCapiLeadPayload): Promise<v
   // Build hashed user_data — only include keys with actual values
   const userData: Record<string, string> = {};
   const em = hashEmail(email);
-  const ph = hashPhone(phone);
+  const ph = hashPhone(phone, phoneCountryIso);
   const fn = hashFirstName(fullName);
   const ln = hashLastName(fullName);
   const db = hashDateOfBirth(birthDate);
@@ -135,4 +137,3 @@ export async function sendMetaLeadEvent(payload: MetaCapiLeadPayload): Promise<v
     req.end();
   });
 }
-

@@ -28,13 +28,14 @@ export class ReservationsController {
   findByPhone = asyncHandler(async (req: Request, res: Response) => {
     const phone = req.params.phone as string;
     const restaurantId = req.query.restaurant_id as string;
+    const phoneCountryIso = req.query.phone_country_iso as string | undefined;
 
     if (!restaurantId) {
       res.status(400).json({ error: 'restaurant_id is required' });
       return;
     }
 
-    const reservations = await reservationsService.findByPhone(phone, restaurantId);
+    const reservations = await reservationsService.findByPhone(phone, restaurantId, phoneCountryIso);
     res.json(reservations);
   });
 
@@ -83,4 +84,3 @@ export class ReservationsController {
 }
 
 export default new ReservationsController();
-

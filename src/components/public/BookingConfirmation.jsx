@@ -1,20 +1,12 @@
 import React from "react";
 import { CheckCircle, Phone, Calendar, Users, Clock, User } from "lucide-react";
 import { formatDateOnlyBR } from "@/lib/date-utils";
+import { formatInternationalPhoneDisplay } from "@/lib/phone-utils";
 
 export default function BookingConfirmation({ reservationCode, restaurant, bookingData, onBackToHome }) {
   // Formatar o número de telefone para exibição
   const formatPhoneDisplay = (phone) => {
-    if (!phone) return '';
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      let formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2)}`;
-      if (cleaned.length >= 7) {
-        formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7, 11)}`;
-      }
-      return formatted;
-    }
-    return phone;
+    return formatInternationalPhoneDisplay(phone, bookingData.phone_country_iso);
   };
 
   return (

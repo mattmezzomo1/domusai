@@ -6,8 +6,33 @@ import {
   CustomerResponseDTO,
   FilterParams,
 } from '../../types';
+import { normalizePhone } from '../../utils/meta.util';
 
 export class CustomersService {
+  private normalizeCustomerPhone(phone: string, countryIso?: string | null): string {
+    const normalizedPhone = normalizePhone(phone, countryIso);
+    if (!normalizedPhone) {
+      throw new AppError('Invalid phone number', 400);
+    }
+    return normalizedPhone;
+  }
+
+  private buildPhoneLookupCandidates(phone: string, countryIso?: string | null): string[] {
+    const candidates = new Set<string>();
+    const rawDigits = String(phone || '').replace(/\D/g, '');
+    const normalizedPhone = normalizePhone(phone, countryIso);
+
+    if (normalizedPhone) {
+      candidates.add(normalizedPhone);
+      if ((countryIso || 'BR').toUpperCase() === 'BR' && normalizedPhone.startsWith('55')) {
+        candidates.add(normalizedPhone.slice(2));
+      }
+    }
+
+    if (rawDigits) candidates.add(rawDigits);
+    return [...candidates];
+  }
+
   async create(ownerEmail: string, data: CreateCustomerDTO): Promise<CustomerResponseDTO> {
     // Verify restaurant belongs to user
     const restaurant = await prisma.restaurant.findFirst({
@@ -26,7 +51,7 @@ export class CustomersService {
         restaurant_id: data.restaurant_id,
         owner_email: ownerEmail,
         full_name: data.full_name,
-        phone_whatsapp: data.phone_whatsapp,
+        phone_whatsapp: this.normalizeCustomerPhone(data.phone_whatsapp, data.phone_country_iso),
         email: data.email,
         birth_date: data.birth_date,
         updated_date: new Date(),
@@ -104,6 +129,15 @@ export class CustomersService {
     }
 
     const updateData: any = { ...data, updated_date: new Date() };
+    const phoneCountryIso = updateData.phone_country_iso;
+    delete updateData.phone_country_iso;
+
+    if (updateData.phone_whatsapp !== undefined) {
+      updateData.phone_whatsapp = this.normalizeCustomerPhone(
+        updateData.phone_whatsapp,
+        phoneCountryIso
+      );
+    }
 
     const updatedCustomer = await prisma.customer.update({
       where: { id },
@@ -136,10 +170,17 @@ export class CustomersService {
   }
 
   // Public method to find customer by phone and restaurant (no auth required)
-  async findByPhoneAndRestaurant(phone: string, restaurantId: string): Promise<CustomerResponseDTO | null> {
+  async findByPhoneAndRestaurant(
+    phone: string,
+    restaurantId: string,
+    countryIso?: string | null
+  ): Promise<CustomerResponseDTO | null> {
+    const phoneCandidates = this.buildPhoneLookupCandidates(phone, countryIso);
+    if (phoneCandidates.length === 0) return null;
+
     const customer = await prisma.customer.findFirst({
       where: {
-        phone_whatsapp: phone,
+        phone_whatsapp: { in: phoneCandidates },
         restaurant_id: restaurantId,
       },
     });
@@ -172,7 +213,7 @@ export class CustomersService {
         restaurant_id: data.restaurant_id,
         owner_email: restaurant.owner_email,
         full_name: data.full_name,
-        phone_whatsapp: data.phone_whatsapp,
+        phone_whatsapp: this.normalizeCustomerPhone(data.phone_whatsapp, data.phone_country_iso),
         email: data.email,
         birth_date: data.birth_date,
         updated_date: new Date(),
@@ -196,6 +237,15 @@ export class CustomersService {
     }
 
     const updateData: any = { ...data, updated_date: new Date() };
+    const phoneCountryIso = updateData.phone_country_iso;
+    delete updateData.phone_country_iso;
+
+    if (updateData.phone_whatsapp !== undefined) {
+      updateData.phone_whatsapp = this.normalizeCustomerPhone(
+        updateData.phone_whatsapp,
+        phoneCountryIso
+      );
+    }
 
     const updatedCustomer = await prisma.customer.update({
       where: { id },
@@ -210,4 +260,3 @@ export class CustomersService {
 }
 
 export default new CustomersService();
-

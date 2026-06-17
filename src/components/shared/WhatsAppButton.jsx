@@ -1,12 +1,14 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
+import { normalizePhoneForCountry } from "@/lib/phone-utils";
 
 export default function WhatsAppButton({ phone, message, size = "default", variant = "outline", className = "" }) {
   const handleClick = () => {
-    const cleanPhone = phone.replace(/\D/g, '');
+    const normalized = normalizePhoneForCountry(phone, 'BR');
+    const cleanPhone = normalized.isValid ? normalized.digits : phone.replace(/\D/g, '');
     const encodedMessage = message ? `?text=${encodeURIComponent(message)}` : '';
-    window.open(`https://wa.me/55${cleanPhone}${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/${cleanPhone}${encodedMessage}`, '_blank');
   };
 
   return (

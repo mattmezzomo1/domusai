@@ -3,6 +3,7 @@ import prisma from '../../utils/db';
 import { AppError } from '../../middleware/error.middleware';
 import { CreateReservationDTO, UpdateReservationDTO, ReservationResponseDTO, FilterParams } from '../../types';
 import { sendMetaLeadEvent } from '../../utils/meta-capi.util';
+import { normalizePhone } from '../../utils/meta.util';
 import { toPrismaDateOnly, toPrismaDateOnlyRange, toPrismaDateOnlyStart } from '../../utils/date.util';
 
 export class ReservationsService {
@@ -28,6 +29,22 @@ export class ReservationsService {
       throw new AppError('Invalid reservation date', 400);
     }
     return date;
+  }
+
+  private buildPhoneLookupCandidates(phone: string, countryIso?: string | null): string[] {
+    const candidates = new Set<string>();
+    const rawDigits = String(phone || '').replace(/\D/g, '');
+    const normalizedPhone = normalizePhone(phone, countryIso);
+
+    if (normalizedPhone) {
+      candidates.add(normalizedPhone);
+      if ((countryIso || 'BR').toUpperCase() === 'BR' && normalizedPhone.startsWith('55')) {
+        candidates.add(normalizedPhone.slice(2));
+      }
+    }
+
+    if (rawDigits) candidates.add(rawDigits);
+    return [...candidates];
   }
 
   private generateReservationCode(): string {
@@ -146,11 +163,18 @@ export class ReservationsService {
     return reservation as any;
   }
 
-  async findByPhone(phone: string, restaurantId: string): Promise<ReservationResponseDTO[]> {
+  async findByPhone(
+    phone: string,
+    restaurantId: string,
+    countryIso?: string | null
+  ): Promise<ReservationResponseDTO[]> {
+    const phoneCandidates = this.buildPhoneLookupCandidates(phone, countryIso);
+    if (phoneCandidates.length === 0) return [];
+
     // Find customer by phone
     const customers = await prisma.customer.findMany({
       where: {
-        phone_whatsapp: phone,
+        phone_whatsapp: { in: phoneCandidates },
         restaurant_id: restaurantId,
       },
     });
@@ -355,6 +379,7 @@ export class ReservationsService {
           fbc: tracking?.fbc,
           email: tracking?.email,
           phone: tracking?.phone,
+          phoneCountryIso: tracking?.phone_country_iso,
           fullName: tracking?.full_name,
           birthDate: tracking?.birth_date,
           externalId: reservation.id,

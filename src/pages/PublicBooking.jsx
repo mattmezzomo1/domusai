@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { restaurantService, customerService, tableService, shiftService, reservationService, environmentService } from "@/services/api.service";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle } from "lucide-react";
@@ -22,6 +22,7 @@ export default function PublicBooking() {
     environment_id: "",
     full_name: "",
     phone_whatsapp: "",
+    phone_country_iso: "BR",
     email: "",
     notes: "",
     birth_date: "",
@@ -31,6 +32,7 @@ export default function PublicBooking() {
   const [reservationCode, setReservationCode] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get('slug') || 'demo';
@@ -114,6 +116,7 @@ export default function PublicBooking() {
         environment_id: "",
         full_name: "",
         phone_whatsapp: "",
+        phone_country_iso: "BR",
         email: "",
         notes: "",
         birth_date: "",
@@ -153,8 +156,9 @@ export default function PublicBooking() {
 
   const handleStep3Complete = async (data) => {
     // Prevenir múltiplas submissões
-    if (isSubmitting) return;
+    if (submittingRef.current) return;
 
+    submittingRef.current = true;
     setError(null);
     setIsSubmitting(true);
     const finalData = { ...bookingData, ...data };
@@ -176,7 +180,8 @@ export default function PublicBooking() {
         // Use public endpoint to get customer by phone and restaurant
         customer = await customerService.getByPhoneAndRestaurant(
           finalData.phone_whatsapp,
-          restaurant.id
+          restaurant.id,
+          finalData.phone_country_iso
         );
 
         console.log("Using existing customer:", customer);
@@ -184,7 +189,8 @@ export default function PublicBooking() {
         // Buscar cliente existente por telefone
         customer = await customerService.getByPhoneAndRestaurant(
           finalData.phone_whatsapp,
-          restaurant.id
+          restaurant.id,
+          finalData.phone_country_iso
         );
 
         if (!customer) {
@@ -194,6 +200,7 @@ export default function PublicBooking() {
             owner_email: restaurant.owner_email,
             full_name: finalData.full_name,
             phone_whatsapp: finalData.phone_whatsapp,
+            phone_country_iso: finalData.phone_country_iso,
             email: finalData.email || null,
             birth_date: finalData.birth_date ? new Date(finalData.birth_date).toISOString() : null
           });
@@ -303,6 +310,7 @@ export default function PublicBooking() {
       const trackingContext = trackingService.buildTrackingContext({
         email: finalData.email,
         phone: finalData.phone_whatsapp,
+        phoneCountryIso: finalData.phone_country_iso,
         fullName: finalData.full_name,
         birthDate: finalData.birth_date,
       });
@@ -347,15 +355,18 @@ export default function PublicBooking() {
         ...prev,
         full_name: customer.full_name,
         phone_whatsapp: customer.phone_whatsapp,
+        phone_country_iso: finalData.phone_country_iso,
         email: customer.email || prev.email
       }));
 
       setReservationCode(code);
       setCurrentView("confirmation");
+      submittingRef.current = false;
       setIsSubmitting(false);
     } catch (err) {
       console.error("Erro ao criar reserva:", err);
       setError(err.message || "Erro ao criar reserva. Tente novamente.");
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -574,6 +585,7 @@ export default function PublicBooking() {
                   restaurant={restaurant}
                   onComplete={handleStep3Complete}
                   onBack={handleBack}
+                  isSubmitting={isSubmitting}
                 />
               )}
             </div>

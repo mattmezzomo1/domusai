@@ -138,8 +138,11 @@ export const newCustomerService = {
   },
 
   // Public endpoint to find customer by phone and restaurant (no auth required)
-  getByPhoneAndRestaurant: async (phone, restaurantId) => {
-    return apiClient.get(`/customers/public/phone/${phone}/restaurant/${restaurantId}`);
+  getByPhoneAndRestaurant: async (phone, restaurantId, phoneCountryIso = null) => {
+    const queryString = phoneCountryIso
+      ? `?phone_country_iso=${encodeURIComponent(phoneCountryIso)}`
+      : '';
+    return apiClient.get(`/customers/public/phone/${encodeURIComponent(phone)}/restaurant/${restaurantId}${queryString}`);
   },
 
   // Public endpoint to create customer (no auth required, for public booking)

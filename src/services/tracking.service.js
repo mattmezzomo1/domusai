@@ -192,16 +192,29 @@ class TrackingService {
   }
 
   /**
+   * Read _fbc or derive it from fbclid when available on the conversion URL.
+   */
+  getFbc() {
+    const existingFbc = this.getCookie('_fbc');
+    if (existingFbc) return existingFbc;
+
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    return fbclid ? `fb.1.${Date.now()}.${fbclid}` : null;
+  }
+
+  /**
    * Build the tracking context object to include in the reservation creation request.
    * This data is forwarded to the backend which sends it to Meta CAPI.
+   * @param {{ email?: string | null, phone?: string | null, phoneCountryIso?: string | null, fullName?: string | null, birthDate?: string | Date | null }} params
    */
-  buildTrackingContext({ email, phone, fullName, birthDate } = {}) {
+  buildTrackingContext({ email, phone, phoneCountryIso, fullName, birthDate } = /** @type {any} */ ({})) {
     return {
       fbp: this.getCookie('_fbp'),
-      fbc: this.getCookie('_fbc'),
+      fbc: this.getFbc(),
       event_source_url: window.location.href,
       email: email || null,
       phone: phone || null,
+      phone_country_iso: phoneCountryIso || null,
       full_name: fullName || null,
       birth_date: birthDate || null,
     };
@@ -244,4 +257,3 @@ class TrackingService {
 // Export singleton instance
 export const trackingService = new TrackingService();
 export default trackingService;
-

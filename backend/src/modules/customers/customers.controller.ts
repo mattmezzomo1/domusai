@@ -44,7 +44,12 @@ export class CustomersController {
   findByPhoneAndRestaurant = asyncHandler(async (req: Request, res: Response) => {
     const phone = req.params.phone as string;
     const restaurantId = req.params.restaurantId as string;
-    const customer = await customersService.findByPhoneAndRestaurant(phone, restaurantId);
+    const phoneCountryIso = req.query.phone_country_iso as string | undefined;
+    const customer = await customersService.findByPhoneAndRestaurant(
+      phone,
+      restaurantId,
+      phoneCountryIso
+    );
     res.json(customer);
   });
 
@@ -65,4 +70,3 @@ export class CustomersController {
 }
 
 export default new CustomersController();
-
